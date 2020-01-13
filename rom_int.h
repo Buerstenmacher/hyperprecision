@@ -13,11 +13,12 @@ namespace rom {
 
 class uintxx_t;							//there will be a class uintxx_t soon
 std::ostream& operator << (std::ostream& os, const ::rom::uintxx_t& v);//there will be an output operator
+class intxx_t;							//there will be a class intxx_t soon
+std::ostream& operator << (std::ostream& os, const ::rom::intxx_t& v);//there will be an output operator
 
 inline uint8_t getbit(uint64_t in, uint8_t nthbit) {//get the value of the nth bit out of one uint64_t
 if (nthbit>63) {return 0;}
-static uint64_t mask;
-mask = uint64_t(1) << nthbit;
+uint64_t mask{uint64_t(1) << nthbit};
 return ((mask & in) >> nthbit);
 }
 
@@ -44,13 +45,11 @@ return (0);
 
 void reserve(size_t n) {_d.reserve(n+32);}	//32 bits are extra cushion
 
-bool at(size_t nr) const{		//access individul bit
-return (nr<_d.size())?_d.at(nr):false;	//get false==zero if you access bits out of range
-}
+//access individul bit	//get false==zero if you access bits out of range
+bool at(size_t nr) const{return (nr<_d.size())?_d.at(nr):false;}
+void trim(void) 	{_d.resize(size(),false);}	//remove all zeroes from _d that are meaningless
 
 //bool& at(size_t nr) 	{return _d.at(nr);}	//sorry but non-const-.at() does not work on std::vector<bool>
-
-void trim(void) {_d.resize(size(),false);}	//remove all zeroes from _d that are meaningless
 
 size_t decimal_size(void) {	//get the size of the dezimal representation of this number
 if ((*this)==0) {return 1;}	//the value of zero is the only one with a leading zero (false)
@@ -63,7 +62,15 @@ do 	{
 return digits;
 }
 
+explicit operator unsigned char() const{	//convert it back to uint8_t
+uint64_t uchar_n_values{UCHAR_MAX+1};
+return uint64_t((*this)%uchar_n_values);
+}
+
+uintxx_t operator*(bool r) const {return (r)?uintxx_t{*this}:uintxx_t{};}	//multiplication by single digit binary value {0,1}
+
 public:
+
 uintxx_t(void):_d{} {};			//default constructor; empty _d means value is zero
 ~uintxx_t() = default;			//default destructor
 uintxx_t(const uintxx_t& in) = default;	//default copy
@@ -87,19 +94,12 @@ while (i-- != 0) {
 return res;
 }
 
-explicit operator unsigned char() const{	//convert it back to uint8_t
-uint64_t uchar_n_values{UCHAR_MAX+1};
-return uint64_t((*this)%uchar_n_values);
-}
-
-/*
-operator std::string() const{		//convert to binary std::string
+/*	operator std::string() const{		//convert to binary std::string
 std::string ret{};
 for (auto it{_d.rbegin()};it!=_d.rend();++it) {ret += (*it)?'1':'0';}
 ret += " "+std::to_string(_d.size())+"bits";
 return ret;
-}
-*/
+}	*/
 
 operator std::string() const{		//convert to decimal std::string
 if ((*this)==0) {return "0";}
@@ -172,7 +172,7 @@ do	{
 return ret;
 }
 
-uintxx_t operator/(const uintxx_t& r) const {	//division
+uintxx_t operator/(const uintxx_t& r) const {	//recursive division algorithm
 if (this->size()< r.size())	{return 0;}	//if divisor is larger integer division will return zero
 if (this->size()==r.size())	{return (*this>=r)?1:0;}
 //for (uint8_t i{0};i<=20;++i) 	{if (r == 1<<i) 	{return (*this)>>i;}}	//aditional speedup
@@ -190,8 +190,7 @@ for (uint64_t n{0};n!=r;++n)	{ret*=(*this);}
 return ret;
 }
 
-/*
-ISO/IEC 14882:2003(E) - 5.6 Multiplicative operators:
+/*	ISO/IEC 14882:2003(E) - 5.6 Multiplicative operators:
 The binary / operator yields the quotient, and the binary % operator yields the remainder from the division
 of the first expression by the second. If the second operand of / or % is zero the behavior is undefined;
 otherwise (a/b)*b + a%b is equal to a. If both operands are nonnegative then the remainder is nonnegative;
@@ -202,10 +201,6 @@ the preferred algorithm for integer division follows the rules defined in the IS
 ISO/IEC 1539:1991, in which the quotient is always rounded toward zero.
 -->	(a/b)*b + a%b == a
 -->	a%b == a - (a/b)*b	*/
-
-uintxx_t operator%(const uintxx_t& r) const {return (*this - (*this/r)*r);}	//modulus
-
-uintxx_t operator*(bool r) const {return (r)?uintxx_t{*this}:uintxx_t{};}	//multiplication by single digit binary value {0,1}
 
 bool operator!=(const uintxx_t& r) const {	//operator != might be much faster than operator ==
 if (this->size()!=r.size()) {return true;}	//so we define this one first
@@ -218,8 +213,7 @@ if (this->size()<r.size()) 	{return true;}
 if (this->size()>r.size()) 	{return false;}
 if (r.size()==0)		{return false;}
 size_t i{r.size()};
-do 	{
-	--i;
+do {	--i;
 	if (this->at(i) < r.at(i))	{return true;}
 	if (this->at(i) > r.at(i))	{return false;}
 	} while (i);
@@ -263,6 +257,7 @@ uintxx_t temp{*this};
 return temp;
 }
 
+uintxx_t operator% (const uintxx_t& r) const 	{return (*this - (*this/r)*r);}	//modulus
 bool	 operator==(const uintxx_t& r) const 	{return !(*this!=r);}
 bool	 operator> (const uintxx_t& r) const 	{return (r<*this);}
 bool 	 operator>=(const uintxx_t& r) const	{return ((*this>r) or (*this==r));}
@@ -378,9 +373,9 @@ throw std::runtime_error("intxx_t operator< failed");
 uintxx_t abs(void) const  			{return value;}	//and ignore sign}
 operator std::string() const			{return ((sign == (-1))?"-":"+")+std::string(value);}
 intxx_t operator%(const intxx_t& r) const 	{return (*this - (*this/r)*r);}
-bool operator> (const intxx_t& r) const		{return r<(*this);}
-bool operator!=(const intxx_t& r) const 	{return ((r<(*this)) || ((*this)<r));}
-bool operator==(const intxx_t& r) const 	{return !(*this != r);}
+bool 	operator> (const intxx_t& r) const	{return r<(*this);}
+bool 	operator!=(const intxx_t& r) const 	{return ((r<(*this)) || ((*this)<r));}
+bool 	operator==(const intxx_t& r) const 	{return !(*this != r);}
 intxx_t operator*=(const intxx_t& r) 		{return (*this)=(*this)*r;}
 intxx_t operator/=(const intxx_t& r) 		{return (*this)=(*this)/r;}
 intxx_t operator^=(size_t r)	 		{return (*this)=(*this)^r;}
@@ -406,7 +401,7 @@ return os;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 }       //namespace rom
 
-//otherwise useless test function
+//otherwise useless testfunction
 template <class ui>	//any integer
 ui test_plus_minus(ui in, ui min, ui max) {
 ui ret{in};
@@ -416,21 +411,16 @@ return ret;
 }
 
 
-void rom_int_t(void) {
+void rom_int_t(void) {	//demo function
 
-for (size_t i{0};i!=100;i++) {	//test factorial with our type intxx_t
+for (size_t i{0};i<=100;i++) {	//test factorial with our type intxx_t
 	rom::intxx_t b{rom::factorial<rom::intxx_t>(i)};
-	std::cout << i <<" ! = \t" << b << std::endl;
+	std::cout << i <<"! =\t" << b << std::endl;
 	}
 std::cout << std::endl;
-
-
 
 std::cout << "2^4432 - 1 is a mersenne prime number" << std::endl;
 rom::intxx_t f{rom::intxx_t{2}^4432};
 f--;
-std::cout << "it is: "<< std::endl;
-std::cout << f << std::endl;
-
+std::cout << "it is: "<< std::endl << f << std::endl;
 }	//rom_int_t
-
