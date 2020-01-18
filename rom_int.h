@@ -22,13 +22,6 @@ uint64_t mask{uint64_t(1) << nthbit};
 return ((mask & in) >> nthbit);
 }
 
-template <class ui> 		//any type of integer
-ui factorial(size_t inp) {	//calculate inp!
-ui res{1};
-for (;inp!=0;inp--) {res *= inp;}
-return res;
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -36,7 +29,7 @@ class uintxx_t {        //this class should create an unlimitided unsigned integ
 private:		//we will only declare one member variable
 std::vector<bool> _d;	//the bit at(n) has a rank of 2^n; there is only 1 data member
 
-size_t size(void) const	{	//get the size in bytes of this number
+size_t effective_size(void) const	{	//get the size in bytes of this number
 size_t s{_d.size()};
 if (!s) {return 0;}
 do 	{if(this->at(--s)) {return(s+1);}} while (s);	//ignore leading zeros
@@ -47,7 +40,10 @@ void reserve(size_t n) {_d.reserve(n+32);}	//32 bits are extra cushion
 
 //access individul bit	//get false==zero if you access bits out of range
 bool at(size_t nr) const{return (nr<_d.size())?_d.at(nr):false;}
-void trim(void) 	{_d.resize(size(),false);}	//remove all zeroes from _d that are meaningless
+void trim(void) 	{_d.resize(effective_size(),false);}	//remove all zeroes from _d that are meaningless
+auto begin(void)-> decltype(_d.begin()) {return _d.begin();}
+auto end(void) 	-> decltype(_d.end()) 	{return _d.end();}
+size_t size(void)			{return _d.size();}
 
 //bool& at(size_t nr) 	{return _d.at(nr);}	//sorry but non-const-.at() does not work on std::vector<bool>
 
@@ -82,7 +78,7 @@ trim();
 }
 
 explicit operator uint64_t() const{	//convert it back to uint64_t
-if ((*this).size()>64)	{
+if ((*this).effective_size()>64)	{
 	throw std::runtime_error ("a number of type uintxx_t is to large to be converted to uint64_t");
 	}
 uint64_t res{0};
@@ -123,8 +119,68 @@ if (bool(th)) {throw std::runtime_error ("converting uintxx_t to std::string fai
 return ret;
 }
 
+uintxx_t operator+=(const uintxx_t& r) 		{//zero copy
+auto& th{*this};
+if(th._d.size()<r._d.size()) {th._d.resize(r._d.size(),false);}
+size_t i{0};
+uint8_t leftover{0};
+for (	;i<r._d.size();++i) {
+	uint8_t val = th._d.at(i)+r._d.at(i)+leftover;
+	leftover=val/2;
+	th._d.at(i)=(val%2);
+	}
+for (	;i<th._d.size();++i) {
+	uint8_t val = th._d.at(i)+leftover;
+	leftover=val/2;
+	th._d.at(i)=(val%2);
+	}
+while (leftover) {
+	uint8_t val = leftover;
+	leftover = val/2;
+	th._d.push_back(val%2);
+	}
+return th;
+}
+
 uintxx_t operator+(const uintxx_t& right) const {	//addition
-size_t lsize{std::max((*this).size(),right.size())};
+auto th{*this};
+return th+=right;
+}
+
+//uintxx_t operator-=(const uintxx_t& r) 	{return (*this)=(*this)-r;}
+uintxx_t operator-=(const uintxx_t& r)	{//zero copy
+auto& th{*this};
+if (th<r) {throw std::runtime_error ("uintxx_t operator - calculated a negative number (top)");}
+size_t i{0};
+uint8_t leftover{0};
+for (	;i<r._d.size();++i) {
+	int8_t val = th._d.at(i)-r._d.at(i)-leftover;
+	leftover = (val<0);
+	th._d.at(i)=(val%2);
+	}
+for (	;i<th._d.size();++i) {
+	int8_t val = th._d.at(i)-leftover;
+	leftover = (val<0);
+	th._d.at(i)=(val%2);
+	}
+while (leftover) {
+	uint8_t val = leftover;
+	leftover = val/2;
+	th._d.push_back((val%2)?1:0);//at this point we would have the two's complement value in ret
+	throw std::runtime_error ("uintxx_t operator - calculated a negative number (bottom)");
+	}				//but we will not deal with negitive numbers inside type uintxx_t
+th.trim();
+return th;
+}
+
+uintxx_t operator-(const uintxx_t& right) const {	//subtraction
+auto th{*this};
+return th-=right;
+}
+
+/*
+uintxx_t operator+(const uintxx_t& right) const {	//addition; slow but ok
+size_t lsize{std::max((*this).effective_size(),right.effective_size())};
 uintxx_t ret{};
 ret.reserve(lsize);
 uint8_t leftover{0};
@@ -136,19 +192,20 @@ for ( size_t i{0};i!=lsize;++i) {
 if (leftover) {ret._d.push_back(leftover);}
 ret.trim();
 return ret;
-}
+}*/
 
-uintxx_t operator-(const uintxx_t& right) const {	//subtraction
-size_t lsize{std::max((*this).size(),right.size())};
+/*
+uintxx_t operator-(const uintxx_t& right) const {	//subtraction; slow but ok
+size_t lsize{std::max((*this).effective_size(),right.effective_size())};
 uintxx_t ret{};
-ret.reserve(lsize);
+//ret.reserve(lsize);
 uint8_t leftover{0};
 for ( size_t i{0};i!=lsize;++i) {
 	int8_t val = (*this).at(i)-right.at(i)-leftover;
-/*	if (val == 1)		{ret._d.push_back(1);leftover = 0;}
+/~	if (val == 1)		{ret._d.push_back(1);leftover = 0;}
 	else if	(val == 0)	{ret._d.push_back(0);leftover = 0;}
 	else if	(val == -1)	{ret._d.push_back(1);leftover = 1;}
-	else /~(val == -2)~/	{ret._d.push_back(0);leftover = 1;}*/	//this 4 line table is represented in the following 2 lines of code
+	else /~(val == -2)~/	{ret._d.push_back(0);leftover = 1;}~/	//this 4 line table is represented in the following 2 lines of code
 	leftover = (val<0);
 	ret._d.push_back(val%2);
 	}
@@ -158,13 +215,13 @@ if (leftover) {
 	}				//but we will not deal with negitive numbers inside type uintxx_t
 ret.trim();
 return ret;
-}
+}	*/
 
 uintxx_t operator*(const uintxx_t& right) const {	//multiplication
 auto left{*this};
 uintxx_t ret{};
-ret.reserve(this->size()+right.size());
-size_t i{right.size()};
+ret.reserve(this->effective_size()+right.effective_size());
+size_t i{right.effective_size()};
 do	{
 	ret <<= 1;
 	if (right.at(--i)) {ret += left;}
@@ -173,15 +230,15 @@ return ret;
 }
 
 uintxx_t operator/(const uintxx_t& r) const {	//recursive division algorithm
-if (this->size()< r.size())	{return 0;}	//if divisor is larger integer division will return zero
-if (this->size()==r.size())	{return (*this>=r)?1:0;}
-//for (uint8_t i{0};i<=20;++i) 	{if (r == 1<<i) 	{return (*this)>>i;}}	//aditional speedup
-uintxx_t rupscale_result{((*this>>1)/r)<<1};		//we will end up here if this->size() > r.size()
+if (this->effective_size()< r.effective_size())	{return 0;}	//if divisor is larger integer division will return zero
+if (this->effective_size()==r.effective_size())	{return (*this>=r)?1:0;}
+if (r == 2) 			{return (*this)>>1;}	//aditional speedup
+uintxx_t rupscale_result{((*this>>1)/r)<<1};		//we will end up here if this->effective_size() > r.effective_size()
 if (bool(rupscale_result)) {
 	auto leftover = *this - (r * rupscale_result);
 	return rupscale_result + (leftover/r);
 	}
-return (*this>=r)?1:0;	//we will end up here if this->size() > r.size() and (rupscale_result ==0)
+return (*this>=r)?1:0;	//we will end up here if this->effective_size() > r.effective_size() and (rupscale_result ==0)
 }
 
 uintxx_t operator^(uint64_t r) const {	//exponentiation
@@ -203,16 +260,16 @@ ISO/IEC 1539:1991, in which the quotient is always rounded toward zero.
 -->	a%b == a - (a/b)*b	*/
 
 bool operator!=(const uintxx_t& r) const {	//operator != might be much faster than operator ==
-if (this->size()!=r.size()) {return true;}	//so we define this one first
-for (size_t i{0};i!=r.size();++i) 	{if (this->at(i) != r.at(i))	{return true;}}
+if (this->effective_size()!=r.effective_size()) {return true;}	//so we define this one first
+for (size_t i{0};i!=r.effective_size();++i) 	{if (this->at(i) != r.at(i))	{return true;}}
 return false;
 }
 
 bool operator<(const uintxx_t& r) const {
-if (this->size()<r.size()) 	{return true;}
-if (this->size()>r.size()) 	{return false;}
-if (r.size()==0)		{return false;}
-size_t i{r.size()};
+if (this->effective_size()<r.effective_size()) 	{return true;}
+if (this->effective_size()>r.effective_size()) 	{return false;}
+if (r.effective_size()==0)		{return false;}
+size_t i{r.effective_size()};
 do {	--i;
 	if (this->at(i) < r.at(i))	{return true;}
 	if (this->at(i) > r.at(i))	{return false;}
@@ -228,7 +285,7 @@ return ret;
 }
 
 uintxx_t operator>>(size_t n) const {		//right shift
-if (n >= this->size()) {return uintxx_t{};}	//return zero
+if (n >= this->effective_size()) {return uintxx_t{};}	//return zero
 auto ret{*this};
 ret._d.erase(ret._d.begin(),ret._d.begin()+n);
 ret.trim();
@@ -246,13 +303,13 @@ return *this;
 }
 
 uintxx_t operator++(int) {
-uintxx_t temp{*this};
+auto temp{*this};
 ++(*this);
 return temp;
 }
 
 uintxx_t operator--(int) {
-uintxx_t temp{*this};
+auto temp{*this};
 --(*this);
 return temp;
 }
@@ -262,8 +319,6 @@ bool	 operator==(const uintxx_t& r) const 	{return !(*this!=r);}
 bool	 operator> (const uintxx_t& r) const 	{return (r<*this);}
 bool 	 operator>=(const uintxx_t& r) const	{return ((*this>r) or (*this==r));}
 bool 	 operator<=(const uintxx_t& r) const	{return ((*this<r) or (*this==r));}
-uintxx_t operator+=(const uintxx_t& r) 		{return (*this)=(*this)+r;}
-uintxx_t operator-=(const uintxx_t& r) 		{return (*this)=(*this)-r;}
 uintxx_t operator*=(const uintxx_t& r) 		{return (*this)=(*this)*r;}
 uintxx_t operator^=(uint64_t r)			{return (*this)=(*this)^r;}
 uintxx_t operator/=(const uintxx_t& r) 		{return (*this)=(*this)/r;}
@@ -321,8 +376,8 @@ return ret;
 intxx_t operator-(const intxx_t& r) const {	//subtraction
 int8_t right_sign(r.sign*-1);
 int8_t left_sign{this->sign};
-auto l_abs{this->abs()};
-auto r_abs{r.abs()};
+const auto& l_abs{this->abs()};
+const auto& r_abs{r.abs()};
 const auto& smaller_abs{std::min(l_abs,r_abs)};
 const auto& larger_abs {std::max(l_abs,r_abs)};
 int8_t larger_sign{(l_abs<r_abs)?right_sign:left_sign};
@@ -333,7 +388,8 @@ return ret;
 }
 
 intxx_t operator+(const intxx_t& r) const {	//addition
-auto neg_r  {r*(intxx_t(-1))};
+auto neg_r  {r};
+neg_r.sign *= -1;
 return ((*this) - neg_r);
 }
 
@@ -370,6 +426,10 @@ if ((left_sign ==-1)&&(right_sign ==-1))	{return (r.value < this->value);}
 throw std::runtime_error("intxx_t operator< failed");
 }
 
+intxx_t operator<<(size_t n) const 		{return intxx_t{value<<n};}
+intxx_t operator>>(size_t n) const 		{return intxx_t{value>>n};}
+intxx_t operator<<=(size_t n)			{return (*this)=(*this)<<n;}
+intxx_t operator>>=(size_t n)			{return (*this)=(*this)>>n;}
 uintxx_t abs(void) const  			{return value;}	//and ignore sign}
 operator std::string() const			{return ((sign == (-1))?"-":"+")+std::string(value);}
 intxx_t operator%(const intxx_t& r) const 	{return (*this - (*this/r)*r);}
@@ -396,6 +456,22 @@ std::ostream& operator << (std::ostream& os, const rom::intxx_t& v) {
 os << std::string(v);
 return os;
 }
+
+template <class inti> //any integer
+inti sqrt(const inti& in) {
+if (in<0)	{throw std::runtime_error("cannot calculate sqrt of negative integer");}
+if (in<2)	{return in;}
+auto largecan =  (sqrt((in>>2))<<1) + inti{1};
+return ((largecan^2) > in)?(--largecan):(largecan);
+}
+
+template <class ui> 		//any type of integer
+ui factorial(size_t inp) {	//calculate inp!
+ui res{1};
+for (;inp!=0;inp--) {res *= inp;}
+return res;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -419,8 +495,26 @@ for (size_t i{0};i<=100;i++) {	//test factorial with our type intxx_t
 	}
 std::cout << std::endl;
 
-std::cout << "2^4432 - 1 is a mersenne prime number" << std::endl;
-rom::intxx_t f{rom::intxx_t{2}^4432};
+rom::intxx_t s{7};
+std::cout << s << std::endl;
+std::cout << (s=test_plus_minus(s,rom::intxx_t{-1000000},rom::intxx_t{1000000})) << std::endl;
+std::cout << std::endl;
+
+
+std::cout << "2^2281 - 1 is a mersenne prime number" << std::endl;
+auto  f{rom::intxx_t{2}^2281};
 f--;
 std::cout << "it is: "<< std::endl << f << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
 }	//rom_int_t
