@@ -29,13 +29,6 @@ class uintxx_t {        //this class should create an unlimitided unsigned integ
 private:		//we will only declare one member variable
 std::vector<bool> _d;	//the bit at(n) has a rank of 2^n; there is only 1 data member
 
-size_t effective_size(void) const	{	//get the size in bytes of this number
-size_t s{_d.size()};
-if (!s) {return 0;}
-do 	{if(this->at(--s)) {return(s+1);}} while (s);	//ignore leading zeros
-return (0);
-}
-
 void reserve(size_t n) {_d.reserve(n+32);}	//32 bits are extra cushion
 
 //access individul bit	//get false==zero if you access bits out of range
@@ -75,6 +68,13 @@ uintxx_t& operator=(const uintxx_t& in) = default;//default copy assignment
 uintxx_t(uint64_t inp):_d{} {		//construct from built in uint64_t
 for (uint8_t i{0};i!=64;++i) {_d.push_back(getbit(inp,i));}
 trim();
+}
+
+size_t effective_size(void) const	{	//get the size in bytes of this number
+size_t s{_d.size()};
+if (!s) {return 0;}
+do 	{if(this->at(--s)) {return(s+1);}} while (s);	//ignore leading zeros
+return (0);
 }
 
 explicit operator uint64_t() const{	//convert it back to uint64_t
@@ -293,12 +293,14 @@ return ret;
 }
 
 uintxx_t& operator++() {
-(*this) += uintxx_t{1};
+static auto one{uintxx_t{1}};
+(*this) += one;
 return *this;
 }
 
 uintxx_t& operator--() {
-(*this) -= uintxx_t{1};
+static auto one{uintxx_t{1}};
+(*this) -= one;
 return *this;
 }
 
@@ -314,7 +316,6 @@ auto temp{*this};
 return temp;
 }
 
-uintxx_t operator% (const uintxx_t& r) const 	{return (*this - (*this/r)*r);}	//modulus
 bool	 operator==(const uintxx_t& r) const 	{return !(*this!=r);}
 bool	 operator> (const uintxx_t& r) const 	{return (r<*this);}
 bool 	 operator>=(const uintxx_t& r) const	{return ((*this>r) or (*this==r));}
@@ -322,6 +323,7 @@ bool 	 operator<=(const uintxx_t& r) const	{return ((*this<r) or (*this==r));}
 uintxx_t operator*=(const uintxx_t& r) 		{return (*this)=(*this)*r;}
 uintxx_t operator^=(uint64_t r)			{return (*this)=(*this)^r;}
 uintxx_t operator/=(const uintxx_t& r) 		{return (*this)=(*this)/r;}
+uintxx_t operator% (const uintxx_t& r) const 	{return (*this - (*this/r)*r);}	//modulus
 uintxx_t operator%=(const uintxx_t& r) 		{return (*this)=(*this)%r;}
 uintxx_t operator<<=(size_t n)			{return (*this)=(*this)<<n;}
 uintxx_t operator>>=(size_t n)			{return (*this)=(*this)>>n;}
@@ -333,7 +335,7 @@ explicit operator bool() const			{return (*this)!=uintxx_t(0);}	//dont do this; 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class intxx_t {	//the one int to catch them all
-private:	//it can possibly hold any integer value (if your system is fast enough
+private:	//it can possibly hold any integer value (if your system is fast enough)
 uintxx_t value;	//should hold its absolute value
 int8_t sign;	//should be +1 or -1 for the sign of number
 
@@ -345,8 +347,10 @@ intxx_t& operator=(const intxx_t& in) 	= default;	//default copy assignment
 intxx_t(int64_t inp):value{uint64_t(std::abs(inp))},sign{(inp<0)?int8_t{-1}:int8_t{+1}}	{}
 intxx_t(const uintxx_t in):value{in},sign(+1) {}
 
+size_t effective_size(void) const	{return value.effective_size();}
+
 explicit operator int64_t() const{	//convert it back to int64_t
-uint64_t ret{value};
+uint64_t ret = uint64_t{value};
 auto min{std::numeric_limits<int64_t>::min()};
 auto max{std::numeric_limits<int64_t>::max()};
 if ((ret>uint64_t(std::abs(min)) or ret>uint64_t(std::abs(max)))) {throw std::runtime_error ("intxx_t operator int64_t() calculated a number that is too large ");}
@@ -355,7 +359,7 @@ return (int64_t(ret)*sign);
 
 intxx_t operator*(const intxx_t& r) const {	//multiplication
 intxx_t ret{};
-ret.value = (*this).value* r.value;
+ret.value = (*this).value * r.value;
 ret.sign  = (*this).sign * r.sign;
 return ret;
 }
@@ -432,7 +436,7 @@ intxx_t operator<<=(size_t n)			{return (*this)=(*this)<<n;}
 intxx_t operator>>=(size_t n)			{return (*this)=(*this)>>n;}
 uintxx_t abs(void) const  			{return value;}	//and ignore sign}
 operator std::string() const			{return ((sign == (-1))?"-":"+")+std::string(value);}
-intxx_t operator%(const intxx_t& r) const 	{return (*this - (*this/r)*r);}
+intxx_t operator% (const intxx_t& r) const 	{return (*this - (*this/r)*r);}
 bool 	operator> (const intxx_t& r) const	{return r<(*this);}
 bool 	operator!=(const intxx_t& r) const 	{return ((r<(*this)) || ((*this)<r));}
 bool 	operator==(const intxx_t& r) const 	{return !(*this != r);}
@@ -446,6 +450,111 @@ intxx_t operator+=(const intxx_t& r) 		{return (*this)=(*this)+r;}
 };	//class intxx_t
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+template <size_t precision = 16>	//intended numer of bits representing the mantissa
+class floatxx_t {
+private:
+intxx_t exp;
+intxx_t mant;
+
+void shift_mantissa_right(int64_t digits) {	//if digits is negative shift left
+if 	(digits>0)	{mant >>= digits;}		//left shift with negative input will always preserve value and precision
+else if (digits<0)	{mant <<= std::abs(digits);}	//right shift with positive input should preserve value but precision might be lost
+exp += digits;
+}
+
+//inflate of collapse mantissa to <precision> size
+void renormalize(size_t ndig = precision) {shift_mantissa_right(mant.effective_size()-ndig);}
+
+//match both parameters to the highest precision of the two
+static void match_exponent_to_highest_precission(floatxx_t& l, floatxx_t& r) {
+if (l.exp > r.exp) {l.shift_mantissa_right(int64_t(r.exp-l.exp));}
+if (l.exp < r.exp) {r.shift_mantissa_right(int64_t(l.exp-r.exp));}
+}
+
+public:
+floatxx_t(const intxx_t& in):exp{0},mant{in} {renormalize();}
+~floatxx_t() 					= default;	//default destructor
+floatxx_t(const floatxx_t& in) 			= default;	//default copy
+floatxx_t& operator=(const floatxx_t& in) 	= default;	//default copy assignment
+
+operator std::string() const {
+auto th{*this};
+th.renormalize();
+return std::string(th.mant)+" *2^ "+std::string(th.exp);
+}
+
+floatxx_t operator*=(const floatxx_t& r) {
+auto& th{*this};
+th.exp += r.exp;
+th.mant *= r.mant;
+th.renormalize();
+return th;
+}
+
+floatxx_t operator/=(const floatxx_t& r) {
+auto& th{*this};
+th.renormalize(2*precision);	//double the size of mantissa to get best acuracy for division
+th.exp -= r.exp;
+th.mant /= r.mant;
+th.renormalize();
+return th;
+}
+
+floatxx_t operator+=(floatxx_t r) {
+auto& th{*this};
+match_exponent_to_highest_precission(th,r);
+th.mant+=r.mant;
+th.renormalize();
+return th;
+}
+
+floatxx_t operator-=(floatxx_t r) {
+auto& th{*this};
+match_exponent_to_highest_precission(th,r);
+th.mant-=r.mant;
+th.renormalize();
+return th;
+}
+
+bool	 operator< (const floatxx_t& rin) const 	{
+auto th{*this};	//copy
+auto r{rin};	//copy
+match_exponent_to_highest_precission(th,r);
+return (th.mant < r.mant);
+}
+
+bool	 operator!=(const floatxx_t& r) const 	{return (*this<r)||(*this>r);}
+bool	 operator==(const floatxx_t& r) const 	{return !(*this!=r);}
+bool	 operator> (const floatxx_t& r) const 	{return (r<*this);}
+bool 	 operator>=(const floatxx_t& r) const	{return ((*this>r) or (*this==r));}
+bool 	 operator<=(const floatxx_t& r) const	{return ((*this<r) or (*this==r));}
+
+floatxx_t operator*(const floatxx_t& right) const {
+auto th{*this};
+return th*=right;
+}
+
+floatxx_t operator/(const floatxx_t& right) const {
+auto th{*this};
+return th/=right;
+}
+
+floatxx_t operator+(const floatxx_t& right) const {
+auto th{*this};
+return th+=right;
+}
+
+floatxx_t operator-(const floatxx_t& right) const {
+auto th{*this};
+return th-=right;
+}
+
+};
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 //////OUTPUT OPERATORS /////////////////////////////////////////////////////////////////////////////
 std::ostream& operator << (std::ostream& os, const rom::uintxx_t& v) {
 os << std::string(v);
@@ -453,6 +562,12 @@ return os;
 }
 
 std::ostream& operator << (std::ostream& os, const rom::intxx_t& v) {
+os << std::string(v);
+return os;
+}
+
+template <size_t p>	//intended numer of bits representing the mantissa
+std::ostream& operator << (std::ostream& os, const rom::floatxx_t<p>& v) {
 os << std::string(v);
 return os;
 }
@@ -478,31 +593,31 @@ return res;
 }       //namespace rom
 
 //otherwise useless testfunction
-template <class ui>	//any integer
+template <class ui>	//any number type
 ui test_plus_minus(ui in, ui min, ui max) {
 ui ret{in};
-for (ui i{min}; i!=max; ++i)	{ret += i;}
-for (ui i{min}; i!=max; ++i) 	{ret -= i;}
+for (ui i {min}; i<=max; i+=ui{1})	{ret += i;}
+for (ui i {min}; i<=max; i+=ui{1}) 	{ret -= i;}
 return ret;
 }
 
 
 void rom_int_t(void) {	//demo function
 
-for (size_t i{0};i<=100;i++) {	//test factorial with our type intxx_t
+for (size_t i{0};i<=50;i++) {	//test factorial with our type intxx_t
 	rom::intxx_t b{rom::factorial<rom::intxx_t>(i)};
 	std::cout << i <<"! =\t" << b << std::endl;
 	}
 std::cout << std::endl;
 
-rom::intxx_t s{7};
-std::cout << s << std::endl;
-std::cout << (s=test_plus_minus(s,rom::intxx_t{-1000000},rom::intxx_t{1000000})) << std::endl;
+rom::floatxx_t<32> s{7};
+std::cout <<"7: "<< s << std::endl;
+std::cout <<"7: "<<(s=test_plus_minus(s,rom::floatxx_t<32>{-100000},rom::floatxx_t<32>{100000})) << std::endl;
 std::cout << std::endl;
-
 
 std::cout << "2^2281 - 1 is a mersenne prime number" << std::endl;
 auto  f{rom::intxx_t{2}^2281};
+
 f--;
 std::cout << "it is: "<< std::endl << f << std::endl;
 std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
@@ -517,4 +632,8 @@ std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
 std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
 std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
 std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
+
+std::cout << "float 3.0   is:\t" << rom::floatxx_t<>{3} << std::endl;
+std::cout << "float 65535 is:\t" << (rom::floatxx_t<>{65530} + rom::floatxx_t<>{5}) << std::endl;
+
 }	//rom_int_t
