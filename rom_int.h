@@ -479,6 +479,16 @@ floatxx_t(const intxx_t& in):exp{0},mant{in} {renormalize();}
 ~floatxx_t() 					= default;	//default destructor
 floatxx_t(const floatxx_t& in) 			= default;	//default copy
 floatxx_t& operator=(const floatxx_t& in) 	= default;	//default copy assignment
+floatxx_t(double in):exp{0},mant{1} {(*this)=convert_from_double(in);}
+
+floatxx_t convert_from_double(double in) {
+//std::cout << in << std::endl;
+if (in<0) 					{return floatxx_t(intxx_t(int(-1)))* convert_from_double(-1.0*in);}
+if (in>std::numeric_limits<int64_t>::max())	{return floatxx_t(intxx_t(int(2))) * convert_from_double(0.5 *in);}
+if (in!=double(int64_t(in)))			{return convert_from_double(in*2.0) /  floatxx_t(intxx_t(int(2)));}
+return floatxx_t(intxx_t(int64_t(in)));
+throw std::runtime_error("constructor floatxx_t(double) failed");
+}
 
 operator std::string() const {
 auto th{*this};
@@ -526,7 +536,7 @@ match_exponent_to_highest_precission(th,r);
 return (th.mant < r.mant);
 }
 
-bool	 operator!=(const floatxx_t& r) const 	{return (*this<r)||(*this>r);}
+bool	 operator!=(const floatxx_t& r) const 	{return ((*this<r) || (*this>r));}
 bool	 operator==(const floatxx_t& r) const 	{return !(*this!=r);}
 bool	 operator> (const floatxx_t& r) const 	{return (r<*this);}
 bool 	 operator>=(const floatxx_t& r) const	{return ((*this>r) or (*this==r));}
@@ -594,12 +604,29 @@ return res;
 
 //otherwise useless testfunction
 template <class ui>	//any number type
-ui test_plus_minus(ui in, ui min, ui max) {
+ui test_plus_minus(ui in, int64_t min, int64_t max) {
 ui ret{in};
-for (ui i {min}; i<=max; i+=ui{1})	{ret += i;}
-for (ui i {min}; i<=max; i+=ui{1}) 	{ret -= i;}
+for (int64_t i{min}; i!=max; i++)	{ret += ui(rom::intxx_t(i));}
+for (int64_t i{min}; i!=max; i++) 	{ret -= ui(rom::intxx_t(i));}
 return ret;
 }
+
+//otherwise useless testfunction
+template <class flt>	//any number type
+flt test_mul_div(flt in, int64_t min, int64_t max) {
+flt ret{in};
+for (int64_t i{min}; i!=max; i++)	{
+//	std::cout << ret << std::endl;
+	ret *= i;
+	}
+for (int64_t i{min}; i!=max; i++) 	{
+//	std::cout << ret << std::endl;
+	ret /= i;
+	}
+return ret;
+}
+
+
 
 
 void rom_int_t(void) {	//demo function
@@ -610,14 +637,16 @@ for (size_t i{0};i<=50;i++) {	//test factorial with our type intxx_t
 	}
 std::cout << std::endl;
 
-rom::floatxx_t<32> s{7};
-std::cout <<"7: "<< s << std::endl;
-std::cout <<"7: "<<(s=test_plus_minus(s,rom::floatxx_t<32>{-100000},rom::floatxx_t<32>{100000})) << std::endl;
+rom::floatxx_t<128> s{7};
+std::cout <<"           7: "<< s << std::endl;
+std::cout <<"plus minus 7: "<<(s=test_plus_minus(s,1,100000)) << std::endl;
+std::cout <<"mul  div   7: "<<(s=test_mul_div(s,1,100000)) << std::endl;
 std::cout << std::endl;
+
+
 
 std::cout << "2^2281 - 1 is a mersenne prime number" << std::endl;
 auto  f{rom::intxx_t{2}^2281};
-
 f--;
 std::cout << "it is: "<< std::endl << f << std::endl;
 std::cout << "sqrt is: "<< std::endl << (f = rom::sqrt(f)) << std::endl;
@@ -637,3 +666,4 @@ std::cout << "float 3.0   is:\t" << rom::floatxx_t<>{3} << std::endl;
 std::cout << "float 65535 is:\t" << (rom::floatxx_t<>{65530} + rom::floatxx_t<>{5}) << std::endl;
 
 }	//rom_int_t
+
