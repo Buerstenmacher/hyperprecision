@@ -17,14 +17,17 @@ return ((largecan^2) > in)?(--largecan):(largecan);
 template <class ui>             //any type
 ui factorial(size_t inp) {      //calculate inp!
 //static_assert(std::is_arithmetic<ui>::value ,"factorial() needs an arithmetic type as template");
-ui res{1};
-for (;inp!=0;inp--) {res *= inp;}
+ui res{1.0};
+for (;inp!=0;inp--) {
+//	std::cout << "in factorial "<<inp << std::endl;
+	res *= ui(inp);
+	}
 return res;
 }
 
 template <class flt>	//any floating point type
 flt exp(const flt& inp) {//Returns the base-e exponential function of inp, which is e raised to the power inp
-flt val{0.0};
+flt val{0.0};		//we are usion taylor series to calculate this value
 flt last_val{0.0};
 size_t i{0};
 do 	{
@@ -35,27 +38,67 @@ do 	{
 return val;
 }
 
-template <class flt>             //any floating point type
-flt log(const flt& xin) {		//Returns the natural logarithm of x
-if (xin >= 1.7) {
-	static flt log_two{rom::log<flt>(1.5)};
-	return log_two + log<flt>(xin/1.5);
-	}
-flt x = xin-1;
-flt val{0.0};
+template <class flt>                    //any floating point type
+flt log(const flt& xin) {               //Returns the natural logarithm of x
+if (xin >= 1.6) {
+        static flt log_two{rom::log<flt>(1.5)};
+        return log_two + log<flt>(xin/1.5);
+        }
+flt x = xin-1;  //this value has to be smaller than 1.0 otherwise our
+flt val{0.0};   //taylor series will never converge --> infinite loop
 flt last_val{0.0};
-flt ll_val{0.0};
 size_t i{1};
-do 	{
-	last_val = val;
-	val += (x^i)/flt(i);
-	ll_val = val;
-	++i;
-	val -= (x^i)/flt(i);
-	++i;
-	} while (last_val != ll_val);
+do      {
+        last_val = val;
+        val += (x^i)/flt(i);
+        ++i;
+        if (val == last_val) {break;}
+        last_val = val;
+        val -= (x^i)/flt(i);
+        ++i;
+        } while (last_val != val);
 return val;
 }
+
+template <class flt>                    //any floating point type
+flt pow(const flt& base, const flt& exponent) {return exp(exponent*log(base));}
+
+template <class flt>                    //any floating point type
+flt sin(const flt& x) {               //Returns the sinus of x radiants
+flt val{0.0};
+flt last_val{0.0};
+size_t i{1};
+do      {
+        last_val = val;
+        val += (x^i)/factorial<flt>(i);
+        i+=2;
+        if (val == last_val) {break;}
+        last_val = val;
+        val -= (x^i)/factorial<flt>(i);
+        i+=2;
+        } while (last_val != val);
+return val;
+}
+
+template <class flt>                    //any floating point type
+flt cos(const flt& x) {               //Returns the cosinus of x radiants
+flt val{0.0};
+flt last_val{0.0};
+size_t i{0};
+do      {
+        last_val = val;
+        val += (x^i)/factorial<flt>(i);
+        i+=2;
+        if (val == last_val) {break;}
+        last_val = val;
+        val -= (x^i)/factorial<flt>(i);
+        i+=2;
+        } while (last_val != val);
+return val;
+}
+
+template <class flt>				//any floating point type
+flt tan(const flt& x) {return sin(x)/cos(x);}	//Returns the tangens of x radiants
 
 
 //otherwise useless testfunction

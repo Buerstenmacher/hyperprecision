@@ -42,18 +42,27 @@ if      (l.exp > r.exp) {l.shift_mantissa_right(int64_t(r.exp-l.exp));}
 else if (l.exp < r.exp) {r.shift_mantissa_right(int64_t(l.exp-r.exp));}
 }
 
-floatxx_t convert_from_double(double in) {
-static floatxx_t neg_one{intxx_t(int(-1))};
+//match both parameters to the lowest precision of the two
+static void match_exponent_to_lowest_precission(floatxx_t& l, floatxx_t& r) {
+if      (l.exp > r.exp) {r.shift_mantissa_right(int64_t(l.exp-r.exp));}
+else if (l.exp < r.exp) {l.shift_mantissa_right(int64_t(r.exp-l.exp));}
+}
+
+static floatxx_t convert_from_double(double in) {
 static floatxx_t one    {intxx_t(int(1))};
 static floatxx_t two    {intxx_t(int(2))};
+static floatxx_t neg_one{one-two};
 static floatxx_t half   {one /  two};
+if (in == 0.0) 					{return one-one;}//todo: find out why floatxx_t{} does not behave like floatxx_t{int(1)}-floatxx_t{int(1)}
 if (in<0)                                       {return neg_one * convert_from_double(-1.0* in);}
 if (in>std::numeric_limits<int64_t>::max())     {return two     * convert_from_double(0.5 * in);}
 if (in!=double(int64_t(in)))                    {return half    * convert_from_double(in * 2.0);}
-return floatxx_t(intxx_t(int64_t(in)));}
+return intxx_t(int64_t(in));
+}
 
 intxx_t dezimal_exponent(void) const {
 auto th{*this};
+th *= (th<0.0)?(-1.0):(1.0);
 static floatxx_t ten{10.0};
 static floatxx_t tenth{0.1};
 static floatxx_t one{1.0};
@@ -76,7 +85,8 @@ floatxx_t(const intxx_t& in):exp{0},mant{in} {renormalize();}
 ~floatxx_t()                                    = default;      //default destructor
 floatxx_t(const floatxx_t& in)                  = default;      //default copy
 floatxx_t& operator=(const floatxx_t& in)       = default;      //default copy assignment
-floatxx_t(double in):exp{0},mant{1} {(*this)=convert_from_double(in);}
+floatxx_t(void):exp{0},mant{0} {}				//0.0 default
+floatxx_t(double in):exp{0},mant{0} {(*this) = convert_from_double(in);}
 
 explicit operator intxx_t() const {
 auto th{*this};
@@ -92,16 +102,11 @@ return std::string(th.mant)+" *2^ "+std::string(th.exp);
 }*/
 
 operator std::string() const {  //dezimal output in scientific notatation
-auto th{*this};
-th.renormalize();
-auto exponent_power_10{th.dezimal_exponent()};
-std::string ret{"e"+std::string(exponent_power_10)};
-floatxx_t ten_pow = floatxx_t{10.0}^ (exponent_power_10-dezimal_precision()+1) ;
-floatxx_t div {th/ten_pow};
-intxx_t idiv= div.operator intxx_t();
-auto d = std::string(idiv);
+auto ep10{dezimal_exponent()};
+floatxx_t ten_pow = floatxx_t{10.0} ^ (ep10-dezimal_precision()+1) ;
+auto d = std::string(intxx_t((*this)/ten_pow));
 d.insert(2,".");
-return (d+ret);
+return d+ "e" + std::string(ep10);
 }
 
 floatxx_t operator*=(const floatxx_t& r) {
@@ -123,7 +128,7 @@ return th;
 
 floatxx_t operator+=(floatxx_t r) {
 auto& th{*this};
-match_exponent_to_highest_precission(th,r);
+match_exponent_to_lowest_precission(th,r);
 th.mant+=r.mant;
 th.renormalize();
 return th;
@@ -131,7 +136,7 @@ return th;
 
 floatxx_t operator-=(floatxx_t r) {
 auto& th{*this};
-match_exponent_to_highest_precission(th,r);
+match_exponent_to_lowest_precission(th,r);
 th.mant-=r.mant;
 th.renormalize();
 return th;

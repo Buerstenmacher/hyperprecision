@@ -349,7 +349,9 @@ intxx_t(void):value{},sign{1} {};			//default constructor will give us a value o
 ~intxx_t() 				= default;	//default destructor
 intxx_t(const intxx_t& in) 		= default;	//default copy
 intxx_t& operator=(const intxx_t& in) 	= default;	//default copy assignment
-intxx_t(int64_t inp):value{uint64_t(std::abs(inp))},sign{(inp<0)?int8_t{-1}:int8_t{+1}}	{}
+
+intxx_t(int64_t inp):value{uint64_t(std::abs(inp))},sign{(inp<0)?int8_t(-1):int8_t(+1)} {}
+
 intxx_t(const uintxx_t in):value{in},sign(+1) {}
 
 size_t effective_size(void) const	{return value.effective_size();}
@@ -437,8 +439,8 @@ if ((left_sign ==-1)&&(right_sign ==-1))	{return (r.value < this->value);}
 throw std::runtime_error("intxx_t operator< failed");
 }
 
-intxx_t operator<<(size_t n) const 		{return intxx_t{value<<n};}
-intxx_t operator>>(size_t n) const 		{return intxx_t{value>>n};}
+intxx_t operator<<(size_t n) const 		{return intxx_t{value<<n}*intxx_t{sign};}
+intxx_t operator>>(size_t n) const 		{return intxx_t{value>>n}*intxx_t{sign};}
 intxx_t operator<<=(size_t n)			{return (*this)=(*this)<<n;}
 intxx_t operator>>=(size_t n)			{return (*this)=(*this)>>n;}
 uintxx_t abs(void) const  			{return value;}	//and ignore sign}
