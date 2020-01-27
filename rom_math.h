@@ -16,12 +16,8 @@ return ((largecan^2) > in)?(--largecan):(largecan);
 
 template <class ui>             //any type
 ui factorial(size_t inp) {      //calculate inp!
-//static_assert(std::is_arithmetic<ui>::value ,"factorial() needs an arithmetic type as template");
 ui res{1.0};
-for (;inp!=0;inp--) {
-//	std::cout << "in factorial "<<inp << std::endl;
-	res *= ui(inp);
-	}
+for (	;inp!=0;inp--) {res *= ui(inp);}
 return res;
 }
 
@@ -34,12 +30,13 @@ do 	{
 	last_val = val;
 	val += (inp^i)/factorial<flt>(i);
 	++i;
-	} while (last_val < val);
+	} while (last_val != val);
 return val;
 }
 
 template <class flt>                    //any floating point type
 flt log(const flt& xin) {               //Returns the natural logarithm of x
+if (xin<=0)	{throw std::runtime_error("cannot calculate ln of negative number");}
 if (xin >= 1.6) {
         static flt log_two{rom::log<flt>(1.5)};
         return log_two + log<flt>(xin/1.5);
@@ -100,6 +97,31 @@ return val;
 template <class flt>				//any floating point type
 flt tan(const flt& x) {return sin(x)/cos(x);}	//Returns the tangens of x radiants
 
+template <class flt>				//any floating point type
+flt arcsin(const flt& x) {			//Returns arcsin of x
+flt val{0.0};
+flt last_val{0.0};
+size_t i{0};
+do      {
+        last_val = val;
+	flt tmp1{factorial<flt>(2*i)};
+//	std::cout <<"tmp1 "<< std::string(tmp1) << std::endl;
+	flt tmp2{x^(2*i+1)};
+//	std::cout <<"tmp2 "<< std::string(tmp2) << std::endl;
+	flt tmp3(flt(2.0) ^ (2 * i));
+//	std::cout <<"tmp3 "<< std::string(tmp3) << std::endl;
+	flt tmp4{(factorial<flt>(i)^2.0)};
+//	std::cout <<"tmp4 "<< std::string(tmp4) << std::endl;
+	flt tmp5{2.0 * i +1.0};
+//	std::cout <<"tmp5 "<< std::string(tmp5) << std::endl;
+	flt one_term = tmp1*tmp2/(tmp3*tmp4*tmp5);
+//	std::cout << "one_term "<< std::string(one_term) << std::endl;
+	val += one_term;
+//	std::cout << std::string(val) << std::endl;
+	i++;
+        } while (last_val != val);
+return val;
+}
 
 //otherwise useless testfunction
 template <class ui>     //any number type

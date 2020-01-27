@@ -89,9 +89,9 @@ if ((*this).effective_size()>64)	{
 	}
 uint64_t res{0};
 size_t i{_d.size()};
-while (i-- != 0) {
+while (i) {
 	res <<= 1;
-	res += _d.at(i);
+	res += _d.at(--i);
 	}
 return res;
 }

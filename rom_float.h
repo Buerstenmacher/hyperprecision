@@ -62,6 +62,7 @@ return intxx_t(int64_t(in));
 
 intxx_t dezimal_exponent(void) const {
 auto th{*this};
+if ((*this)==0) {return 1;} 
 th *= (th<0.0)?(-1.0):(1.0);
 static floatxx_t ten{10.0};
 static floatxx_t tenth{0.1};
@@ -179,7 +180,10 @@ return th-=right;
 floatxx_t operator^(int64_t r) const {          //exponentiation
 floatxx_t ret{1.0};
 if (r > 0)      {for (int64_t n{0};n!=r;++n)    {ret*=(*this);}}
-if (r < 0)      {for (int64_t n{0};n!=r;--n)    {ret/=(*this);}}
+if (r < 0)      {
+	auto inverse{floatxx_t{1.0}/(*this)};
+	for (int64_t n{0};n!=r;--n)    {ret*=inverse;}
+	}
 return ret;
 }
 
