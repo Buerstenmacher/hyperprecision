@@ -17,7 +17,7 @@ return ((largecan^2) > in)?(--largecan):(largecan);
 template <class ui>             //any type
 ui factorial(size_t inp) {      //calculate inp!
 ui res{1.0};
-for (	;inp!=0;inp--) {res *= ui(inp);}
+while(inp) {res *= ui(inp--);}
 return res;
 }
 
@@ -58,7 +58,10 @@ return val;
 }
 
 template <class flt>                    //any floating point type
-flt pow(const flt& base, const flt& exponent) {return exp(exponent*log(base));}
+flt pow(const flt& base, const flt& exponent) {
+if (base<=0)	{throw std::runtime_error("cannot calculate exp of negative base");}
+return exp(exponent*log(base));
+}
 
 template <class flt>                    //any floating point type
 flt sin(const flt& x) {               //Returns the sinus of x radiants
@@ -99,25 +102,18 @@ flt tan(const flt& x) {return sin(x)/cos(x);}	//Returns the tangens of x radiant
 
 template <class flt>				//any floating point type
 flt arcsin(const flt& x) {			//Returns arcsin of x
+if (x<=-1.0 or x>=1.0)	{throw std::runtime_error("cannot calculate arcsin of "+std::string(x));}
 flt val{0.0};
 flt last_val{0.0};
 size_t i{0};
 do      {
         last_val = val;
 	flt tmp1{factorial<flt>(2*i)};
-//	std::cout <<"tmp1 "<< std::string(tmp1) << std::endl;
 	flt tmp2{x^(2*i+1)};
-//	std::cout <<"tmp2 "<< std::string(tmp2) << std::endl;
 	flt tmp3(flt(2.0) ^ (2 * i));
-//	std::cout <<"tmp3 "<< std::string(tmp3) << std::endl;
-	flt tmp4{(factorial<flt>(i)^2.0)};
-//	std::cout <<"tmp4 "<< std::string(tmp4) << std::endl;
+	flt tmp4{factorial<flt>(i)^2.0};
 	flt tmp5{2.0 * i +1.0};
-//	std::cout <<"tmp5 "<< std::string(tmp5) << std::endl;
-	flt one_term = tmp1*tmp2/(tmp3*tmp4*tmp5);
-//	std::cout << "one_term "<< std::string(one_term) << std::endl;
-	val += one_term;
-//	std::cout << std::string(val) << std::endl;
+	val += 	(tmp1*tmp2/(tmp3*tmp4*tmp5));
 	i++;
         } while (last_val != val);
 return val;

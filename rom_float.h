@@ -12,7 +12,7 @@
 
 namespace rom {
 
-template <size_t precision = 16>
+template <size_t precision = 64>
 class floatxx_t;
 /*std::ostream& operator << (std::ostream& os, const rom::floatxx_t<>& v);
 */
@@ -31,7 +31,7 @@ exp += digits;
 }
 
 //inflate of collapse mantissa to <precision> size
-void renormalize(size_t ndig = precision) {shift_mantissa_right(mant.effective_size()-ndig);}
+void renormalize(size_t ndig = precision) {shift_mantissa_right(int64_t(mant.effective_size())-int64_t(ndig));}
 
 //inflate or deflate mantiss that exponent becomes zero
 void make_exponent_zero(void)   {shift_mantissa_right(-1*int64_t(exp));}
@@ -62,7 +62,7 @@ return intxx_t(int64_t(in));
 
 intxx_t dezimal_exponent(void) const {
 auto th{*this};
-if ((*this)==0) {return 1;} 
+if ((*this)==0) {return 1;}
 th *= (th<0.0)?(-1.0):(1.0);
 static floatxx_t ten{10.0};
 static floatxx_t tenth{0.1};
@@ -104,13 +104,16 @@ return std::string(th.mant)+" *2^ "+std::string(th.exp);
 
 operator std::string() const {  //dezimal output in scientific notatation
 auto ep10{dezimal_exponent()};
-floatxx_t ten_pow = floatxx_t{10.0} ^ (ep10-dezimal_precision()+1) ;
+floatxx_t ten_pow = floatxx_t{10.0} ^ (ep10-dezimal_precision()) ;
 auto d = std::string(intxx_t((*this)/ten_pow));
 d.insert(2,".");
 return d+ "e" + std::string(ep10);
 }
 
 floatxx_t operator*=(const floatxx_t& r) {
+static floatxx_t zero{intxx_t(int(0))};
+if (r.mant==0)		{return zero;}
+if (this->mant==0)	{return zero;}
 auto& th{*this};
 th.exp += r.exp;
 th.mant *= r.mant;
@@ -120,6 +123,8 @@ return th;
 
 floatxx_t operator/=(const floatxx_t& r) {
 auto& th{*this};
+static floatxx_t zero{intxx_t(int(0))};
+if (r.mant==0)	{throw std::runtime_error("division by zero in rom::floatxx_t");}
 th.renormalize(2*precision);    //double the size of mantissa to get best acuracy for division
 th.exp -= r.exp;
 th.mant /= r.mant;
@@ -177,17 +182,13 @@ auto th{*this};
 return th-=right;
 }
 
-floatxx_t operator^(int64_t r) const {          //exponentiation
-floatxx_t ret{1.0};
-if (r > 0)      {for (int64_t n{0};n!=r;++n)    {ret*=(*this);}}
-if (r < 0)      {
-	auto inverse{floatxx_t{1.0}/(*this)};
-	for (int64_t n{0};n!=r;--n)    {ret*=inverse;}
-	}
-return ret;
-}
+floatxx_t operator^(int64_t r) const {return (*this)^intxx_t{r};}
 
 floatxx_t operator^(const intxx_t& r) const {           //exponentiation
+static floatxx_t zero{intxx_t(int(0))};
+static floatxx_t one {intxx_t(int(1))};
+if (r     == 0) 	{return one;}
+if (*this == zero) 	{return zero;}
 floatxx_t ret{1.0};
 if (r > 0)      {for (intxx_t n{0};n!=r;++n)    {ret*=(*this);}}
 if (r < 0)      {for (intxx_t n{0};n!=r;--n)    {ret/=(*this);}}
