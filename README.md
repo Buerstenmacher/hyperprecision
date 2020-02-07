@@ -1,9 +1,7 @@
 this repository declares and defines two unlimited dynamic integer types
+and one unlimited floatingpoint types with user defined precision
 1.      rom::uintxx_t   an unsigned integer with dynamic and possibly unlimited size
 2.      rom::intxx_t    an signed integer with dynamic and possibly unlimited size
-(recomendation:  only use rom::intxx_t type to be safe if negative values come up)
-
-and one unlimited floatingpoint types with user defined precision
 3.      rom::floatxx_t<size_t nr>  (nr defines the number of significant bits of this type)
 
 
