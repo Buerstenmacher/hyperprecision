@@ -4,7 +4,7 @@ this repository declares and defines two unlimited dynamic integer types
 (recomendation:  only use rom::intxx_t type to be safe if negative values come up)
 
 and one unlimited floatingpoint types with user defined precision
-3.	rom::floatxx_t<size_t nr>  (nr defines the number of significant bits of this type)
+3.      rom::floatxx_t<size_t nr>  (nr defines the number of significant bits of this type)
 
 
 --> download all files into one dirctory
