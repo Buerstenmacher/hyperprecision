@@ -123,7 +123,6 @@ return th;
 
 floatxx_t operator/=(const floatxx_t& r) {
 auto& th{*this};
-static floatxx_t zero{intxx_t(int(0))};
 if (r.mant==0)	{throw std::runtime_error("division by zero in rom::floatxx_t");}
 th.renormalize(2*precision);    //double the size of mantissa to get best acuracy for division
 th.exp -= r.exp;

@@ -34,6 +34,13 @@ do 	{
 return val;
 }
 
+template <class flt>	//any floating point type
+flt e(void) {		//calculate eulers number
+static flt ret{0.0};
+if (ret==flt{0.0}) {ret=exp(flt{1.0});}
+return ret;
+}
+
 template <class flt>                    //any floating point type
 flt log(const flt& xin) {               //Returns the natural logarithm of x
 if (xin<=0)	{throw std::runtime_error("cannot calculate ln of negative number");}
@@ -117,6 +124,18 @@ do      {
 	i++;
         } while (last_val != val);
 return val;
+}
+
+template <class flt>	//any floating point type
+flt pi(void) {		//calculate pi 3.1415........
+static flt ret{0.0};
+if (ret==flt{0.0}) {ret=arcsin(flt{0.5})*flt{6.0};}
+return ret;
+}
+
+template <class flt>				//any floating point type
+flt arccos(const flt& x) {			//Returns arccos of x
+return pi<flt>()*flt{0.5} - arcsin(x);
 }
 
 //otherwise useless testfunction
