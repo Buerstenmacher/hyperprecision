@@ -22,18 +22,19 @@ std::ostream& operator << (std::ostream& os, const ::rom::intxx_t& v);//there wi
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
 inline uint8_t getbit(uint64_t in, uint8_t nthbit) {//get the value of the nth bit out of one uint64_t
 if (nthbit>63) {return 0;}
 uint64_t mask{uint64_t(1) << nthbit};
 return ((mask & in) >> nthbit);
 }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class uintxx_t {        //this class should create an unlimitided unsigned integer type
 private:		//we will only declare one member variable
-std::vector<bool> _d;	//the bit at(n) has a rank of 2^n; there is only 1 data member
+std::vector<bool> _d;	//the bit at(n) has a rank of 2^n; there is only this 1 data member
 
 void reserve(size_t n) {_d.reserve(n+32);}	//32 bits are extra cushion
 

@@ -193,6 +193,7 @@ if (r > 0)      {for (intxx_t n{0};n!=r;++n)    {ret*=(*this);}}
 if (r < 0)      {for (intxx_t n{0};n!=r;--n)    {ret/=(*this);}}
 return ret;
 }
+
 };	//class floatxx_t
 
 }	//namespace rom
@@ -204,6 +205,8 @@ std::ostream& operator << (std::ostream& os, const rom::floatxx_t<p>& v) {
 os << std::string(v);
 return os;
 }
+
+
 
 #endif
 

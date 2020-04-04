@@ -21,6 +21,13 @@ while(inp) {res *= ui(inp--);}
 return res;
 }
 
+template <class flt>    //any floating point type
+flt modf(flt x,flt* intpart){
+*intpart = flt(intxx_t(x));
+x -= (*intpart);
+return x;
+}
+
 template <class flt>	//any floating point type
 flt exp(const flt& inp) {//Returns the base-e exponential function of inp, which is e raised to the power inp
 flt val{0.0};		//we are usion taylor series to calculate this value
@@ -70,8 +77,20 @@ if (base<=0)	{throw std::runtime_error("cannot calculate exp of negative base");
 return exp(exponent*log(base));
 }
 
+template <class flt>
+flt pi(void);
+
+template <class flt>
+flt remove_entire_circles(const flt& x) {
+static flt two_pi{ pi<flt>() * flt(2) };
+static flt fractpart{},intpart{};
+fractpart = rom::modf(x/two_pi,&intpart);
+return fractpart * two_pi;
+}
+
 template <class flt>                    //any floating point type
-flt sin(const flt& x) {               //Returns the sinus of x radiants
+flt sin(const flt& xin) {		//Returns the sinus of x radiants
+auto x{remove_entire_circles(xin)};
 flt val{0.0};
 flt last_val{0.0};
 size_t i{1};
@@ -88,7 +107,8 @@ return val;
 }
 
 template <class flt>                    //any floating point type
-flt cos(const flt& x) {               //Returns the cosinus of x radiants
+flt cos(const flt& xin) {               //Returns the cosinus of x radiants
+auto x{remove_entire_circles(xin)};
 flt val{0.0};
 flt last_val{0.0};
 size_t i{0};
@@ -135,6 +155,7 @@ return ret;
 
 template <class flt>				//any floating point type
 flt arccos(const flt& x) {			//Returns arccos of x
+if (x<=-1.0 or x>=1.0)	{throw std::runtime_error("cannot calculate arcos of "+std::string(x));}
 return pi<flt>()*flt{0.5} - arcsin(x);
 }
 
