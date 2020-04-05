@@ -1,4 +1,4 @@
-#include "../rom_header/rom_time.h"
+//#include "../rom_header/rom_time.h"
 #include "rom_int.h"
 #include "rom_float.h"
 #include "rom_math.h"
@@ -38,7 +38,7 @@ cout << "e       is:\t" << e<floatxx_t<128>>() << endl;
 
 cout << "ln(1500.0)is:\t" << log(floatxx_t<32>{1500.0}) << endl;
 cout << "3^3.1     is:\t" << pow(floatxx_t<32>{3.0},floatxx_t<32>{3.1}) << endl;
-cout << "acsin(sin(0.8))  is:\t" << arcsin(sin(floatxx_t<32>{0.8})) << endl;
+cout << "acsin(sin(0.8))  is:\t" << arcsin(sin(floatxx_t<64>{0.8})) << endl;
 cout << "cos(20.0)  is:\t" << cos(floatxx_t<32>{20.0}) << endl;
 cout << "cos(20.0)*cos(20.0) + sin(20.0)*sin(20.0)  is:\t" << endl;
 cout <<

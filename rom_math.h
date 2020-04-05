@@ -14,9 +14,9 @@ auto largecan =  (sqrt((in>>2))<<1) + inti{1};
 return ((largecan^2) > in)?(--largecan):(largecan);
 }
 
-template <class ui>             //any type
+template <class ui>             //any unsigned integer
 ui factorial(size_t inp) {      //calculate inp!
-ui res{1.0};
+ui res{1};
 while(inp) {res *= ui(inp--);}
 return res;
 }
@@ -24,8 +24,7 @@ return res;
 template <class flt>    //any floating point type
 flt modf(flt x,flt* intpart){
 *intpart = flt(intxx_t(x));
-x -= (*intpart);
-return x;
+return (x - *intpart);
 }
 
 template <class flt>	//any floating point type
@@ -43,8 +42,7 @@ return val;
 
 template <class flt>	//any floating point type
 flt e(void) {		//calculate eulers number
-static flt ret{0.0};
-if (ret==flt{0.0}) {ret=exp(flt{1.0});}
+static flt ret{exp(flt{1.0})};
 return ret;
 }
 
@@ -81,10 +79,10 @@ template <class flt>
 flt pi(void);
 
 template <class flt>
-flt remove_entire_circles(const flt& x) {
+flt remove_entire_circles(const flt& rad) {
 static flt two_pi{ pi<flt>() * flt(2) };
 static flt fractpart{},intpart{};
-fractpart = rom::modf(x/two_pi,&intpart);
+fractpart = rom::modf(rad/two_pi,&intpart);
 return fractpart * two_pi;
 }
 
@@ -108,6 +106,12 @@ return val;
 
 template <class flt>                    //any floating point type
 flt cos(const flt& xin) {               //Returns the cosinus of x radiants
+static flt pi_halve{ pi<flt>() / flt(2) };
+return sin(xin+pi_halve);		//cos(x)  = sin(x+90)
+}
+
+/*template <class flt>                    	//any floating point type
+flt cos(const flt& xin) {               	//Returns the cosinus of x radiants
 auto x{remove_entire_circles(xin)};
 flt val{0.0};
 flt last_val{0.0};
@@ -122,7 +126,7 @@ do      {
         i+=2;
         } while (last_val != val);
 return val;
-}
+}*/
 
 template <class flt>				//any floating point type
 flt tan(const flt& x) {return sin(x)/cos(x);}	//Returns the tangens of x radiants
@@ -148,8 +152,7 @@ return val;
 
 template <class flt>	//any floating point type
 flt pi(void) {		//calculate pi 3.1415........
-static flt ret{0.0};
-if (ret==flt{0.0}) {ret=arcsin(flt{0.5})*flt{6.0};}
+static flt ret{arcsin(flt{0.5})*flt{6.0}};
 return ret;
 }
 
