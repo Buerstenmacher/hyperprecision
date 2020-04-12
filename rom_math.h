@@ -104,13 +104,14 @@ do      {
 return val;
 }
 
+/* 	OK but lower accuracy
 template <class flt>                    //any floating point type
 flt cos(const flt& xin) {               //Returns the cosinus of x radiants
 static flt pi_halve{ pi<flt>() / flt(2) };
 return sin(xin+pi_halve);		//cos(x)  = sin(x+90)
-}
+}*/
 
-/*template <class flt>                    	//any floating point type
+template <class flt>                    	//any floating point type
 flt cos(const flt& xin) {               	//Returns the cosinus of x radiants
 auto x{remove_entire_circles(xin)};
 flt val{0.0};
@@ -126,7 +127,7 @@ do      {
         i+=2;
         } while (last_val != val);
 return val;
-}*/
+}
 
 template <class flt>				//any floating point type
 flt tan(const flt& x) {return sin(x)/cos(x);}	//Returns the tangens of x radiants

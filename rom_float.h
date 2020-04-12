@@ -72,7 +72,7 @@ while (th < one) {
         th *= ten;
         ret--;
         }
-while (th >= ten) {
+while (th > ten) {
         th*=tenth;
         ret++;
         }

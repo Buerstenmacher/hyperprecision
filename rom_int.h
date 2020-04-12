@@ -22,7 +22,6 @@ std::ostream& operator << (std::ostream& os, const ::rom::intxx_t& v);//there wi
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
 inline uint8_t getbit(uint64_t in, uint8_t nthbit) {//get the value of the nth bit out of one uint64_t
 if (nthbit>63) {return 0;}
 uint64_t mask{uint64_t(1) << nthbit};
@@ -37,22 +36,22 @@ private:		//we will only declare one member variable
 std::vector<bool> _d;	//the bit at(n) has a rank of 2^n; there is only this 1 data member
 
 void reserve(size_t n) {_d.reserve(n+32);}	//32 bits are extra cushion
-
 //access individul bit	//get false==zero if you access bits out of range
-bool at(size_t nr) const{return (nr<_d.size())?_d.at(nr):false;}
-void trim(void) 	{_d.resize(effective_size(),false);}	//remove all zeroes from _d that are meaningless
-auto begin(void)-> decltype(_d.begin()) {return _d.begin();}
-auto end(void) 	-> decltype(_d.end()) 	{return _d.end();}
-size_t size(void)			{return _d.size();}
-
+bool at(size_t nr) const{return (nr<_d.size())?_d[nr]:false;}
 //bool& at(size_t nr) 	{return _d.at(nr);}	//sorry but non-const-.at() does not work on std::vector<bool>
+void trim(void) 	{_d.resize(effective_size(),false);}	//remove all zeroes from _d that are meaningless
+auto begin(void)-> decltype(_d.begin()) 	{return _d.begin();}
+auto cbegin(void) const -> decltype(_d.cbegin()){return _d.cbegin();}
+auto end(void) 	-> decltype(_d.end()) 		{return _d.end();}
+auto cend(void)   const -> decltype(_d.cend())	{return _d.cend();}
+size_t size(void) const				{return _d.size();}
 
 size_t decimal_size(void) {	//get the size of the dezimal representation of this number
 if ((*this)==0) {return 1;}	//the value of zero is the only one with a leading zero (false)
 uintxx_t compare{1};
 size_t digits{0};
 do 	{
-	digits++;
+	++digits;
 	compare *= 10;
 	} while(compare <= *this);
 return digits;
@@ -62,8 +61,6 @@ explicit operator unsigned char() const{	//convert it back to uint8_t
 uint64_t uchar_n_values{UCHAR_MAX+1};
 return uint64_t((*this)%uchar_n_values);
 }
-
-uintxx_t operator*(bool r) const {return (r)?uintxx_t{*this}:uintxx_t{};}	//multiplication by single digit binary value {0,1}
 
 public:
 
@@ -77,10 +74,10 @@ for (uint8_t i{0};i!=64;++i) {_d.push_back(getbit(inp,i));}
 trim();
 }
 
-size_t effective_size(void) const	{	//get the size in bytes of this number
-size_t s{_d.size()};
+size_t effective_size(void) const	{	//get the size in bits of this number
+static size_t s{_d.size()};	s = _d.size();
 if (!s) {return 0;}
-do 	{if(this->at(--s)) {return(s+1);}} while (s);	//ignore leading zeros
+do 	{if(this->_d[--s]) {return(s+1);}} while (s);	//ignore leading zeros
 return (0);
 }
 
@@ -97,7 +94,7 @@ while (i) {
 return res;
 }
 
-/*	operator std::string() const{		//convert to binary std::string
+/*operator std::string() const{		//convert to binary std::string
 std::string ret{};
 for (auto it{_d.rbegin()};it!=_d.rend();++it) {ret += (*it)?'1':'0';}
 ret += " "+std::to_string(_d.size())+"bits";
@@ -126,26 +123,57 @@ if (bool(th)) {throw std::runtime_error ("converting uintxx_t to std::string fai
 return ret;
 }
 
-uintxx_t operator+=(const uintxx_t& r) 		{//zero copy
-auto& th{*this};
-if(th._d.size()<r._d.size()) {th._d.resize(r._d.size(),false);}
-size_t i{0};
-uint8_t leftover{0};
-for (	;i<r._d.size();++i) {
-	uint8_t val = th._d.at(i)+r._d.at(i)+leftover;
+uintxx_t operator+=(const uintxx_t& r) 		{//zero copy inplace
+if(this->_d.size()<r._d.size()) {this->_d.resize(r._d.size(),false);}
+static auto r_it{r.cbegin()};		r_it = r.cbegin();
+static auto l_it{this->begin()};	l_it = this->begin();
+static auto r_end{r.cend()};		r_end = r.cend();
+static auto l_end{this->end()};		l_end = this->end();
+static uint8_t leftover{};
+static uint8_t val{};
+while (r_it!=r_end) {
+	val = *l_it + (*r_it++) + leftover;
 	leftover=val/2;
-	th._d.at(i)=(val%2);
+	(*l_it++)=(val%2);
 	}
-for (	;i<th._d.size();++i) {
-	uint8_t val = th._d.at(i)+leftover;
+while (l_it!=l_end) {
+	val = *l_it + leftover;
 	leftover=val/2;
-	th._d.at(i)=(val%2);
+	(*l_it++)=(val%2);
+	}
+while (leftover) {
+	val = leftover;
+	leftover = val/2;
+	this->_d.push_back(val%2);
+	}
+return *this;
+}
+
+uintxx_t operator-=(const uintxx_t& r)	{//zero copy
+auto& th{*this};
+if (th<r) {throw std::runtime_error ("uintxx_t operator - calculated a negative number (top)");}
+auto r_it{r.cbegin()};
+auto l_it{th.begin()};
+auto r_end{r.cend()};
+auto l_end{th.end()};
+uint8_t leftover{0};
+while (r_it!=r_end) {
+	int8_t val = *l_it - (*r_it++) -leftover;
+	leftover = (val<0);
+	(*l_it++)=(val%2);
+	}
+while (l_it!=l_end) {
+	int8_t val = *l_it - leftover;
+	leftover = (val<0);
+	(*l_it++)=(val%2);
 	}
 while (leftover) {
 	uint8_t val = leftover;
 	leftover = val/2;
-	th._d.push_back(val%2);
-	}
+	th._d.push_back((val%2)?1:0);//at this point we would have the two's complement value in ret
+	throw std::runtime_error ("uintxx_t operator - calculated a negative number (bottom)");
+	}			//but we will not deal with negitive numbers inside type uintxx_t
+th.trim();
 return th;
 }
 
@@ -154,74 +182,10 @@ auto th{*this};
 return th+=right;
 }
 
-uintxx_t operator-=(const uintxx_t& r)	{//zero copy
-auto& th{*this};
-if (th<r) {throw std::runtime_error ("uintxx_t operator - calculated a negative number (top)");}
-size_t i{0};
-uint8_t leftover{0};
-for (	;i<r._d.size();++i) {
-	int8_t val = th._d.at(i)-r._d.at(i)-leftover;
-	leftover = (val<0);
-	th._d.at(i)=(val%2);
-	}
-for (	;i<th._d.size();++i) {
-	int8_t val = th._d.at(i)-leftover;
-	leftover = (val<0);
-	th._d.at(i)=(val%2);
-	}
-while (leftover) {
-	uint8_t val = leftover;
-	leftover = val/2;
-	th._d.push_back((val%2)?1:0);//at this point we would have the two's complement value in ret
-	throw std::runtime_error ("uintxx_t operator - calculated a negative number (bottom)");
-	}				//but we will not deal with negitive numbers inside type uintxx_t
-th.trim();
-return th;
-}
-
 uintxx_t operator-(const uintxx_t& right) const {	//subtraction
 auto th{*this};
 return th-=right;
 }
-
-/*
-uintxx_t operator+(const uintxx_t& right) const {	//addition; slow but ok
-size_t lsize{std::max((*this).effective_size(),right.effective_size())};
-uintxx_t ret{};
-ret.reserve(lsize);
-uint8_t leftover{0};
-for ( size_t i{0};i!=lsize;++i) {
-	uint8_t val = (*this).at(i)+right.at(i)+leftover;
-	ret._d.push_back(val%2);
-	leftover=val/2;
-	}
-if (leftover) {ret._d.push_back(leftover);}
-ret.trim();
-return ret;
-}*/
-
-/*
-uintxx_t operator-(const uintxx_t& right) const {	//subtraction; slow but ok
-size_t lsize{std::max((*this).effective_size(),right.effective_size())};
-uintxx_t ret{};
-//ret.reserve(lsize);
-uint8_t leftover{0};
-for ( size_t i{0};i!=lsize;++i) {
-	int8_t val = (*this).at(i)-right.at(i)-leftover;
-/~	if (val == 1)		{ret._d.push_back(1);leftover = 0;}
-	else if	(val == 0)	{ret._d.push_back(0);leftover = 0;}
-	else if	(val == -1)	{ret._d.push_back(1);leftover = 1;}
-	else /~(val == -2)~/	{ret._d.push_back(0);leftover = 1;}~/	//this 4 line table is represented in the following 2 lines of code
-	leftover = (val<0);
-	ret._d.push_back(val%2);
-	}
-if (leftover) {
-	ret._d.push_back(leftover);	//at this point we would have the two's complement value in ret
-	throw std::runtime_error ("uintxx_t operator - calculated a negative number ");
-	}				//but we will not deal with negitive numbers inside type uintxx_t
-ret.trim();
-return ret;
-}	*/
 
 uintxx_t operator*(const uintxx_t& right) const {	//multiplication
 auto left{*this};
@@ -230,7 +194,7 @@ ret.reserve(this->effective_size()+right.effective_size());
 size_t i{right.effective_size()};
 do	{
 	ret <<= 1;
-	if (right.at(--i)) {ret += left;}
+	if (right._d[--i]) {ret += left;}
 	} while (i);
 return ret;
 }
@@ -283,19 +247,26 @@ do {	--i;
 return false;	//if we end up here, *this and r are equal, that implies that *this is not smaller than r
 }
 
-uintxx_t operator<<(size_t n) const {		//left shift
-auto ret{*this};
-ret._d.insert(ret._d.begin(),n,false);
-ret.trim();
-return ret;
+uintxx_t operator<<=(size_t n)			{
+this->_d.insert(this->_d.begin(),n,false);
+this->trim();
+return *this;
 }
 
-uintxx_t operator>>(size_t n) const {		//right shift
-if (n >= this->effective_size()) {return uintxx_t{};}	//return zero
-auto ret{*this};
-ret._d.erase(ret._d.begin(),ret._d.begin()+n);
-ret.trim();
-return ret;
+uintxx_t operator>>=(size_t n)			{
+this->_d.erase(this->_d.begin(),this->_d.begin()+n);
+this->trim();
+return *this;
+}
+
+uintxx_t operator<<(size_t r) const {
+auto th{*this};
+return th<<=r;
+}
+
+uintxx_t operator>>(size_t r) const {
+auto th{*this};
+return th>>=r;
 }
 
 uintxx_t& operator++() {
@@ -331,8 +302,6 @@ uintxx_t operator^=(uint64_t r)			{return (*this)=(*this)^r;}
 uintxx_t operator/=(const uintxx_t& r) 		{return (*this)=(*this)/r;}
 uintxx_t operator% (const uintxx_t& r) const 	{return (*this - (*this/r)*r);}	//modulus
 uintxx_t operator%=(const uintxx_t& r) 		{return (*this)=(*this)%r;}
-uintxx_t operator<<=(size_t n)			{return (*this)=(*this)<<n;}
-uintxx_t operator>>=(size_t n)			{return (*this)=(*this)>>n;}
 explicit operator bool() const			{return (*this)!=uintxx_t(0);}	//dont do this; g++ will use it to convert uintxx_t to any integer using bool as intermediary!
 };      //class uintxx_t
 ////////////////////////////////////////////////////////////////////////////////////////////////////
