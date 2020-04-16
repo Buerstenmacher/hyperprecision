@@ -33,27 +33,29 @@ return ((mask & in) >> nthbit);
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class uintxx_t {        //this class should create an unlimitided unsigned integer type
 private:		//we will only declare one member variable
-std::vector<bool> _d;	//the bit at(n) has a rank of 2^n; there is only this 1 data member
+mutable std::vector<bool> _d;	//the bit at(n) has a rank of 2^n; there is only this 1 data member
 
 void reserve(size_t n) {_d.reserve(n+32);}	//32 bits are extra cushion
 //access individul bit	//get false==zero if you access bits out of range
 bool at(size_t nr) const{return (nr<_d.size())?_d[nr]:false;}
-//bool& at(size_t nr) 	{return _d.at(nr);}	//sorry but non-const-.at() does not work on std::vector<bool>
-void trim(void) 	{_d.resize(effective_size(),false);}	//remove all zeroes from _d that are meaningless
+
+size_t trim(void) const	{//remove all zeroes from _d that are meaningless
+static size_t ef{};	//return size in bits
+ef = effective_size();
+_d.resize(ef,false);
+return ef;
+}
+
 auto begin(void)-> decltype(_d.begin()) 	{return _d.begin();}
 auto cbegin(void) const -> decltype(_d.cbegin()){return _d.cbegin();}
 auto end(void) 	-> decltype(_d.end()) 		{return _d.end();}
 auto cend(void)   const -> decltype(_d.cend())	{return _d.cend();}
-size_t size(void) const				{return _d.size();}
+size_t size(void) const				{return trim();}
 
 size_t decimal_size(void) {	//get the size of the dezimal representation of this number
 if ((*this)==0) {return 1;}	//the value of zero is the only one with a leading zero (false)
-uintxx_t compare{1};
 size_t digits{0};
-do 	{
-	++digits;
-	compare *= 10;
-	} while(compare <= *this);
+do 	{++digits;} while(ten_pow(digits) <= *this);
 return digits;
 }
 
@@ -63,7 +65,6 @@ return uint64_t((*this)%uchar_n_values);
 }
 
 public:
-
 uintxx_t(void):_d{} {};			//default constructor; empty _d means value is zero
 ~uintxx_t() = default;			//default destructor
 uintxx_t(const uintxx_t& in) = default;	//default copy
@@ -72,6 +73,13 @@ uintxx_t& operator=(const uintxx_t& in) = default;//default copy assignment
 uintxx_t(uint64_t inp):_d{} {		//construct from built in uint64_t
 for (uint8_t i{0};i!=64;++i) {_d.push_back(getbit(inp,i));}
 trim();
+}
+
+static uintxx_t ten_pow(const size_t n) {	//should calculate 10^n as fast as possible
+static std::vector<uintxx_t> mem{1,10,100};	//example: ten_pow(3) will return 1000
+if (n< mem.size()) 	{return mem.at(n);}
+while (n>=mem.size())	{mem.push_back(mem.back()*10);}
+return ten_pow(n);
 }
 
 size_t effective_size(void) const	{	//get the size in bits of this number
@@ -86,7 +94,7 @@ if ((*this).effective_size()>64)	{
 	throw std::runtime_error ("a number of type uintxx_t is to large to be converted to uint64_t");
 	}
 uint64_t res{0};
-size_t i{_d.size()};
+size_t i{effective_size()};
 while (i) {
 	res <<= 1;
 	res += _d.at(--i);
@@ -94,26 +102,12 @@ while (i) {
 return res;
 }
 
-/*operator std::string() const{		//convert to binary std::string
-std::string ret{};
-for (auto it{_d.rbegin()};it!=_d.rend();++it) {ret += (*it)?'1':'0';}
-ret += " "+std::to_string(_d.size())+"bits";
-return ret;
-}	*/
-
 operator std::string() const{		//convert to decimal std::string
 if ((*this)==0) {return "0";}
 std::string ret{};	//return value
-uintxx_t th = {*this};	//copy
-std::vector<uintxx_t> ten_power{};
-uintxx_t p{1};
-size_t decs{th.decimal_size()};
-for (size_t sz{0};sz!=decs;++sz) {
-	ten_power.push_back(p);	//{1,10,100,1000,10000,....}
-	p*=10;
-	}
-for (auto sz{decs};sz!=0;sz--) {
-	const auto& divisor{ten_power.at(sz-1)};
+auto th {*this};	//copy
+for (auto sz{th.decimal_size()};sz!=0;sz--) {
+	auto divisor{ten_pow(sz-1)};
 	auto digit{th/divisor};
 	if ((digit <= 9)&&(digit>=0))	{ret += '0'+ (unsigned char)digit;}
 	else {throw std::runtime_error ("converting uintxx_t to std::string failed");}
@@ -188,7 +182,7 @@ return th-=right;
 }
 
 uintxx_t operator*(const uintxx_t& right) const {	//multiplication
-auto left{*this};
+const auto& left{*this};
 uintxx_t ret{};
 ret.reserve(this->effective_size()+right.effective_size());
 size_t i{right.effective_size()};
@@ -369,7 +363,7 @@ return ret;
 }
 
 intxx_t operator+(const intxx_t& r) const {	//addition
-auto neg_r  {r};
+auto neg_r{r};
 neg_r.sign *= -1;
 return ((*this) - neg_r);
 }
@@ -425,7 +419,7 @@ intxx_t operator^=(size_t r)	 		{return (*this)=(*this)^r;}
 intxx_t operator%=(const intxx_t& r) 		{return (*this)=(*this)%r;}
 intxx_t operator-=(const intxx_t& r) 		{return (*this)=(*this)-r;}
 intxx_t operator+=(const intxx_t& r) 		{return (*this)=(*this)+r;}
-
+explicit operator bool() const			{return (*this)!=intxx_t(0);}	//dont do this; g++ will use it to convert uintxx_t to any integer using bool as intermediary!
 };	//class intxx_t
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

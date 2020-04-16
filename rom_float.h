@@ -12,13 +12,8 @@
 
 namespace rom {
 
-template <size_t precision = 64>
-class floatxx_t;
-/*std::ostream& operator << (std::ostream& os, const rom::floatxx_t<>& v);
-*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-template <size_t precision>     //intended numer of bits representing the mantissa
+template <size_t precision = 64>     //intended numer of bits representing the mantissa
 class floatxx_t {
 private:        //value == mant * 2.0^exp
 intxx_t exp;    //exponent to the base 2.0
@@ -60,23 +55,30 @@ if (in!=double(int64_t(in)))                    {return half    * convert_from_d
 return intxx_t(int64_t(in));
 }
 
-intxx_t dezimal_exponent(void) const {
-auto th{*this};
+intxx_t dezimal_exponent(void) const {//107.56 > 2, 12.0 > 1, 7098678,3 > 6, 0.7 > -1
 if ((*this)==0) {return 1;}
+auto th{*this};
 th *= (th<0.0)?(-1.0):(1.0);
-static floatxx_t ten{10.0};
-static floatxx_t tenth{0.1};
-static floatxx_t one{1.0};
-int64_t ret{0};
-while (th < one) {
-        th *= ten;
-        ret--;
-        }
-while (th > ten) {
-        th*=tenth;
-        ret++;
-        }
-return ret;
+static const floatxx_t one{1};
+static const floatxx_t ten{10};
+uint64_t ndig{};
+floatxx_t muli{},divi{};
+intxx_t ret{1};
+const int8_t expected_digits{3};
+for (int8_t i{expected_digits};i>=0;--i) {		//2,1,0
+	ndig 	= uint64_t(uintxx_t::ten_pow(i));	//100,10,1
+	muli 	= floatxx_t(uintxx_t::ten_pow(ndig));	//10^100,10^10,10^1
+	divi 	= one/muli;
+	while (th > ten) {
+		th *= divi;
+        	ret+=ndig;
+       		}
+	while (th < one) {
+        	th *= muli;
+        	ret-=ndig;
+        	}
+	}
+return --ret;
 }
 
 size_t dezimal_precision(void)  const {return precision/4;}     //intended numer of digits of
@@ -86,7 +88,7 @@ floatxx_t(const intxx_t& in):exp{0},mant{in} {renormalize();}
 ~floatxx_t()                                    = default;      //default destructor
 floatxx_t(const floatxx_t& in)                  = default;      //default copy
 floatxx_t& operator=(const floatxx_t& in)       = default;      //default copy assignment
-floatxx_t(void):exp{0},mant{0} {}				//0.0 default
+floatxx_t(void):exp{0},mant{0} {renormalize();}		//0.0 default
 floatxx_t(double in):exp{0},mant{0} {(*this) = convert_from_double(in);}
 
 explicit operator intxx_t() const {
@@ -103,9 +105,10 @@ return std::string(th.mant)+" *2^ "+std::string(th.exp);
 }*/
 
 operator std::string() const {  //dezimal output in scientific notatation
-auto ep10{dezimal_exponent()};
-floatxx_t ten_pow = floatxx_t{10.0} ^ (ep10-dezimal_precision()) ;
-auto d = std::string(intxx_t((*this)/ten_pow));
+intxx_t ep10{dezimal_exponent()};
+floatxx_t ten_pow = floatxx_t{10.0} ^ (intxx_t(dezimal_precision())-ep10) ;
+auto tint = intxx_t((*this)*ten_pow);
+auto d = std::string(tint);
 d.insert(2,".");
 return d+ "e" + std::string(ep10);
 }
@@ -131,8 +134,8 @@ th.renormalize();
 return th;
 }
 
-floatxx_t operator+=(floatxx_t r) {
-auto& th{*this};
+floatxx_t operator+=(floatxx_t r) {	//todo: there is a problem if exp and mant is 0
+auto& th{*this};			//find it!
 match_exponent_to_lowest_precission(th,r);
 th.mant+=r.mant;
 th.renormalize();
@@ -205,8 +208,6 @@ std::ostream& operator << (std::ostream& os, const rom::floatxx_t<p>& v) {
 os << std::string(v);
 return os;
 }
-
-
 
 #endif
 
