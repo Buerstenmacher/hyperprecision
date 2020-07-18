@@ -1,4 +1,4 @@
-#include "../rom_header/rom_time.h"
+//#include "../rom_header/rom_time.h"
 #include "rom_math.h"
 #include "rom_lns.h"
 
@@ -7,7 +7,7 @@ using namespace rom;
 
 int main(void)  {
 
-auto start{rom::mashinetime()};
+//auto start{rom::mashinetime()};
 
 auto tm{floatxx_t<64>::exp(floatxx_t<64>{0.001})};
 cout << "e^(0.001) is:\t" << tm << endl;
@@ -80,6 +80,6 @@ cout << "+10^4= \t" << pow(floatxx_t<128>(+10),floatxx_t<128>(4)) << endl;
 cout << "-10^-4= \t" << pow(floatxx_t<128>(-10),floatxx_t<128>(-4)) << endl;
 cout << "+10^-4= \t" << pow(floatxx_t<128>(+10),floatxx_t<128>(-4)) << endl;
 
-auto time{rom::mashinetime()-start};
-cout <<"This calculation took " << time << " seconds."<< std::endl;
+//auto time{rom::mashinetime()-start};
+//cout <<"This calculation took " << time << " seconds."<< std::endl;
 }

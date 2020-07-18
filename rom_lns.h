@@ -5,6 +5,7 @@
 #ifndef ROM_LNS
 #define ROM_LNS
 
+//UNFINISHED DO NOT USE THIS FILE!!!!!!!!!!
 /*
 the purpose of this file is to implement an logarithmic number type in c++11.
 it should be able to store numeric values similar to floating point variables and should be able to
