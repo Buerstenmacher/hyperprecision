@@ -22,11 +22,13 @@ std::ostream& operator << (std::ostream& os, const ::rom::intxx_t& v);//there wi
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
 inline uint8_t getbit(uint64_t in, uint8_t nthbit) {//get the value of the nth bit out of one uint64_t
 if (nthbit>63) {return 0;}
 uint64_t mask{uint64_t(1) << nthbit};
 return ((mask & in) >> nthbit);
-}
+}*/
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -70,11 +72,6 @@ uintxx_t(void):_d{} {};			//default constructor; empty _d means value is zero
 uintxx_t(const uintxx_t& in) = default;	//default copy
 uintxx_t& operator=(const uintxx_t& in) = default;//default copy assignment
 
-uintxx_t(uint64_t inp):_d{} {		//construct from built in uint64_t
-for (uint8_t i{0};i!=64;++i) {_d.push_back(getbit(inp,i));}
-trim();
-}
-
 static uintxx_t ten_pow(const size_t n) {	//should calculate 10^n as fast as possible
 static std::vector<uintxx_t> mem{1,10,100};	//example: ten_pow(3) will return 1000
 if (n< mem.size()) 	{return mem.at(n);}
@@ -87,6 +84,11 @@ static size_t s{_d.size()};	s = _d.size();
 if (!s) {return 0;}
 do 	{if(this->_d[--s]) {return(s+1);}} while (s);	//ignore leading zeros
 return (0);
+}
+
+uintxx_t(uint64_t inp):_d{} {		//construct from built in uint64_t
+for (uint8_t i{0};i!=64;++i) {_d.push_back(getbit(inp,i));}
+trim();
 }
 
 explicit operator uint64_t() const{	//convert it back to uint64_t
@@ -308,6 +310,7 @@ private:	//it can possibly hold any integer value (if your system is fast enough
 uintxx_t value;	//should hold its absolute value
 int8_t sign;	//should be +1 or -1 for the sign of number
 
+
 public:
 intxx_t(void):value{},sign{1} {};			//default constructor will give us a value of +0
 ~intxx_t() 				= default;	//default destructor
@@ -318,8 +321,6 @@ intxx_t(int64_t inp):value{uint64_t(std::abs(inp))},sign{(inp<0)?int8_t(-1):int8
 
 intxx_t(const uintxx_t in):value{in},sign(+1) {}
 
-size_t effective_size(void) const	{return value.effective_size();}
-
 explicit operator int64_t() const{	//convert it back to int64_t
 uint64_t ret = uint64_t{value};
 auto min{std::numeric_limits<int64_t>::min()};
@@ -327,6 +328,8 @@ auto max{std::numeric_limits<int64_t>::max()};
 if ((ret>uint64_t(std::abs(min)) or ret>uint64_t(std::abs(max)))) {throw std::runtime_error ("intxx_t operator int64_t() calculated a number that is too large ");}
 return (int64_t(ret)*sign);
 }
+
+size_t effective_size(void) const	{return value.effective_size();}
 
 intxx_t operator*(const intxx_t& r) const {	//multiplication
 intxx_t ret{};
