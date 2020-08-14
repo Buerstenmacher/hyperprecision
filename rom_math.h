@@ -64,18 +64,17 @@ static auto ret{flt::exp(flt{1.0})};
 return ret;
 }
 
-template <class flt>                    //any floating point type
-flt pow(const flt& base, const flt& exponent) {
+template <class flt>                    	//any floating point type
+flt pow(const flt& base, const flt& exponent) {	//todo: find out why it is inaccurate with low bitnumbers
 if (base==0)	{return flt{0};}
 if (base<0)	{//negative base will only be accepted if exponent is integer
 	static flt neg1{-1};
 	intxx_t in{};
-	if (rom::modf(exponent,&in) == flt{0}) {
-		return bool(in%2)?(neg1*pow(neg1*base,flt(in))):pow(neg1*base,flt(in));
-		}
+	if (rom::modf(exponent,&in) == flt{0}) {return bool(in%2)?(neg1*pow(abs(base),flt(in))):pow(abs(base),flt(in));}
 	throw std::runtime_error("cannot calculate exp of negative base, result would be a complex number");
 	}
-return flt::exp(exponent*flt::log(base));
+auto ret {flt::exp(exponent*flt::log(base))};
+return ret;
 }
 
 template <class flt>
@@ -83,7 +82,7 @@ flt pi(void);
 
 template <class flt>
 flt remove_entire_circles(const flt& rad) {//angle in radiants is reduced
-static flt two_pi{ pi<flt>() * flt(2) };
+static auto two_pi{ pi<flt>() * flt(2) };
 static flt fractpart{},intpart{};
 fractpart = rom::modf(rad/two_pi,&intpart);
 return fractpart * two_pi;
@@ -111,7 +110,7 @@ return val;
 template <class flt>                    //any floating point type
 flt cos(const flt& xin) {               //Returns the cosinus of x radiants
 static flt pi_halve{ pi<flt>() / flt(2) };
-return sin(xin+pi_halve);		//cos(x)  = sin(x+90)
+return sin(xin+pi_halve);		//cos(x)  = sin(x+90°)
 }*/
 
 template <class flt>                    	//any floating point type

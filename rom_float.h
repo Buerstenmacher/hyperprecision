@@ -18,6 +18,7 @@ namespace rom {
 template <size_t precision = 64>     //intended numer of bits representing the mantissa
 class floatxx_t {
 private:        //value == _mant * 2.0^_exp
+using temp_type = floatxx_t<precision + 16>;	//some temporary values will be stored with extra precision
 intxx_t _exp;    //exponent to the base 2.0
 intxx_t _mant;   //mantissa;
 
@@ -28,19 +29,25 @@ _exp += digits;
 }
 
 //inflate of collapse mantissa to <precision> size
-void renormalize(size_t ndig = precision) {shift_mantissa_right(int64_t(_mant.effective_size())-int64_t(ndig));}
+void renormalize(size_t ndig = precision) {
+shift_mantissa_right(int64_t(_mant.effective_size())-int64_t(ndig));
+}
 
 //inflate or deflate mantiss that exponent becomes zero
 void make_exponent_zero(void)   {shift_mantissa_right(-1*int64_t(_exp));}
 
 //match both parameters to the highest precision of the two
 static void match_exponent_to_highest_precission(floatxx_t& l, floatxx_t& r) {
+if (l._mant == 0) {l._exp = r._exp;}//if mantissa is zero you can make the exponent everything you want it to be
+if (r._mant == 0) {r._exp = l._exp;}
 if      (l._exp > r._exp) {l.shift_mantissa_right(int64_t(r._exp-l._exp));}
 else if (l._exp < r._exp) {r.shift_mantissa_right(int64_t(l._exp-r._exp));}
 }
 
 //match both parameters to the lowest precision of the two
 static void match_exponent_to_lowest_precission(floatxx_t& l, floatxx_t& r) {
+if (l._mant == 0) {l._exp = r._exp;}//if mantissa is zero you can make the exponent everything you want it to be
+if (r._mant == 0) {r._exp = l._exp;}
 if      (l._exp > r._exp) {r.shift_mantissa_right(int64_t(l._exp-r._exp));}
 else if (l._exp < r._exp) {l.shift_mantissa_right(int64_t(r._exp-l._exp));}
 }
@@ -108,10 +115,11 @@ static floatxx_t log_core_2(const floatxx_t& xin) {	//Returns the natural logari
 static const auto flt1_9{floatxx_t{1.9}};		//should work for all values that are larger than 0.0
 if (xin<=0)     {throw std::runtime_error("cannot calculate ln of negative number");}
 if (xin > flt1_9) {     //shotcut for large numbers
-        static auto log_1_9{floatxx_t::log_core(flt1_9)};
+        static auto log_1_9{log_core(flt1_9)};
         return  log_1_9 + log_core_2(xin/flt1_9);
         }
-return floatxx_t::log_core(xin);
+auto ret = floatxx_t::log_core(xin);
+return ret;
 }
 
 static floatxx_t exp_core(const floatxx_t& inp) {	//only for use with exp() function!!!!!!!
@@ -145,19 +153,26 @@ floatxx_t(const intxx_t& in):_exp{0},_mant{in} {renormalize();}
 ~floatxx_t()                                    = default;      //default destructor
 floatxx_t(const floatxx_t& in)                  = default;      //default copy
 floatxx_t& operator=(const floatxx_t& in)       = default;      //default copy assignment
-floatxx_t(void):_exp{0},_mant{0} {renormalize();}		//0.0 default
+floatxx_t(void):_exp{0},_mant{0} {}		//0.0 default
 floatxx_t(double in):_exp{0},_mant{0} {(*this) = convert_from_double(in);}
 
-static floatxx_t exp(const floatxx_t& xin) {	//Returns e^x
-static floatxx_t ln2{log_core_2(2)};
-return _2pow(xin/ln2);
+template <size_t dig>     //intended numer of bits representing the mantissa
+friend class floatxx_t;
+template <size_t dig>     //intended numer of bits representing the mantissa
+floatxx_t(const floatxx_t<dig>& in):_exp{in._exp},_mant{in._mant} {}
+
+static floatxx_t exp(const temp_type& xin) {	//Returns e^x
+static auto ln2{log_core_2(temp_type{2})};
+auto ret {_2pow(xin/ln2)};
+return ret;
 }
 
-static floatxx_t log(const floatxx_t& xin) {	//Returns the natural logarithm of x
-floatxx_t m{xin._mant};			//split in mantissa and exponent
-floatxx_t e{xin._exp};
-static auto log_2{log_core_2(2)}; //ln(2.0)
-return e*log_2 + log_core_2(m);
+static floatxx_t log(const temp_type& xin) {	//Returns the natural logarithm of x
+temp_type m{xin._mant};			//split in mantissa and exponent
+temp_type e{xin._exp};
+static auto log_2{log_core_2(temp_type{2})}; //ln(2.0)
+auto ret{ e*log_2 + log_core_2(m)};
+return ret;
 }
 
 static floatxx_t log(const floatxx_t& x,const floatxx_t& bas) {return log(x)/log(bas);}//overload for arbitrary base
