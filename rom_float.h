@@ -23,8 +23,9 @@ intxx_t _exp;    //exponent to the base 2.0
 intxx_t _mant;   //mantissa;
 
 void shift_mantissa_right(int64_t digits) {     //if digits is negative shift left
-if      (digits>0)      {_mant >>= digits;}              //left shift with negative input will always preserve value and precision
-else if (digits<0)      {_mant <<= std::abs(digits);}    //right shift with positive input should preserve value but precision might be lost
+//if      (digits>0)      {_mant >>= digits;}		//left shift with negative input will always preserve value and precision
+if      (digits>0)      {_mant.shift_r_round(digits);}	//left shift with negative input will always preserve value and precision
+else if (digits<0)      {_mant <<= std::abs(digits);}	//right shift with positive input should preserve value but precision might be lost
 _exp += digits;
 }
 
@@ -33,7 +34,7 @@ void renormalize(size_t ndig = precision) {
 shift_mantissa_right(int64_t(_mant.effective_size())-int64_t(ndig));
 }
 
-//inflate or deflate mantiss that exponent becomes zero
+//inflate or deflate mantissa that exponent becomes zero
 void make_exponent_zero(void)   {shift_mantissa_right(-1*int64_t(_exp));}
 
 //match both parameters to the highest precision of the two
@@ -65,6 +66,7 @@ return intxx_t(int64_t(in));
 }
 
 intxx_t dezimal_exponent(void) const {//107.56 > 2, 12.0 > 1, 7098678,3 > 6, 0.7 > -1
+/*
 if ((*this)==0) {return 1;}
 auto th{abs(*this)};
 static const floatxx_t one{1};
@@ -87,9 +89,10 @@ for (int8_t i{expected_digits};i>=0;--i) {		//2,1,0
         	}
 	}
 return --ret;
-/*
-floatxx_t intpart;
-return intxx_t( (modf(log(th,10),&intpart)<0.0)?(intpart-1):(intpart));*/
+*/
+intxx_t intpart;
+temp_type th{abs(*this)};
+return intxx_t( (modf(temp_type::log(th,10),&intpart)<0.0)?(intpart-1):(intpart));
 }
 
 size_t dezimal_precision(void)  const {return precision/4;}     //intended numer of digits of
@@ -159,7 +162,7 @@ floatxx_t(double in):_exp{0},_mant{0} {(*this) = convert_from_double(in);}
 template <size_t dig>     //intended numer of bits representing the mantissa
 friend class floatxx_t;
 template <size_t dig>     //intended numer of bits representing the mantissa
-floatxx_t(const floatxx_t<dig>& in):_exp{in._exp},_mant{in._mant} {}
+floatxx_t(const floatxx_t<dig>& in):_exp{in._exp},_mant{in._mant} {renormalize();}
 
 static floatxx_t exp(const temp_type& xin) {	//Returns e^x
 static auto ln2{log_core_2(temp_type{2})};
@@ -168,10 +171,10 @@ return ret;
 }
 
 static floatxx_t log(const temp_type& xin) {	//Returns the natural logarithm of x
-temp_type m{xin._mant};			//split in mantissa and exponent
-temp_type e{xin._exp};
-static auto log_2{log_core_2(temp_type{2})}; //ln(2.0)
-auto ret{ e*log_2 + log_core_2(m)};
+floatxx_t m{xin._mant};			//split in mantissa and exponent
+floatxx_t e{xin._exp};
+static auto log_2{log_core_2(2)}; //ln(2.0)
+auto ret{e*log_2 + log_core_2(m)};
 return ret;
 }
 
@@ -188,7 +191,7 @@ intxx_t ep10{dezimal_exponent()};
 auto ten_pow = floatxx_t{10.0} ^ (intxx_t(dezimal_precision())-ep10) ;
 auto tint = intxx_t((*this)*ten_pow);
 auto d = std::string(tint);
-d.insert(2,".");
+d.insert(d.size()-dezimal_precision(),".");
 return d+ "e" + std::string(ep10);
 }
 

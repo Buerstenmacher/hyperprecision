@@ -7,8 +7,6 @@ using namespace rom;
 
 int main(void)  {
 
-
-
 //auto start{rom::mashinetime()};
 
 auto tm{floatxx_t<64>::exp(floatxx_t<64>{0.001})};
@@ -77,14 +75,14 @@ cout << "arccos(cos(0.8))is:\t" << arcsin(sin(floatxx_t<128>{8}/floatxx_t<128>{1
 
 cout << "cos(20.0)      is:\t" << cos(floatxx_t<128>{20.0}) << endl;
 
-
-
 cout << "cos(20)*cos(20) + sin(20)*sin(20)  is:\t" << endl;
-
 
 cout <<
 pow(cos(floatxx_t<8>{20.0}),floatxx_t<8>(2))+
 pow(sin(floatxx_t<8>{20.0}),floatxx_t<8>(2)) <<"\t  8bit Float "<< std::endl <<
+
+//(cos(floatxx_t<8>{20.0}) ^ 2)+
+//(sin(floatxx_t<8>{20.0}) ^ 2) <<"\t  8bit Float "<< std::endl <<
 
 pow(cos(floatxx_t<16>{20.0}),floatxx_t<16>(2))+
 pow(sin(floatxx_t<16>{20.0}),floatxx_t<16>(2)) <<"\t 16bit Float "<< std::endl <<

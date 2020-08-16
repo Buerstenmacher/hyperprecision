@@ -20,7 +20,6 @@ std::ostream& operator << (std::ostream& os, const ::rom::uintxx_t& v);//there w
 class intxx_t;							//there will be a class intxx_t soon
 std::ostream& operator << (std::ostream& os, const ::rom::intxx_t& v);//there will be an output operator
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 inline uint8_t getbit(uint64_t in, uint8_t nthbit) {//get the value of the nth bit out of one uint64_t
 if (nthbit>63) {return 0;}
@@ -46,11 +45,11 @@ _d.resize(ef,false);
 return ef;
 }
 
-auto begin(void)-> decltype(_d.begin()) 	{return _d.begin();}
-auto cbegin(void) const -> decltype(_d.cbegin()){return _d.cbegin();}
-auto end(void) 	-> decltype(_d.end()) 		{return _d.end();}
-auto cend(void)   const -> decltype(_d.cend())	{return _d.cend();}
-size_t size(void) const				{return trim();}
+auto begin(void)	-> decltype(_d.begin()) 	{return _d.begin();}
+auto cbegin(void) const -> decltype(_d.cbegin())	{return _d.cbegin();}
+auto end(void) 		-> decltype(_d.end()) 		{return _d.end();}
+auto cend(void)   const -> decltype(_d.cend())		{return _d.cend();}
+size_t size(void) const					{return trim();}
 
 size_t decimal_size(void) {	//get the size of the dezimal representation of this number
 if ((*this)==0) {return 1;}	//the value of zero is the only one with a leading zero (false)
@@ -247,6 +246,14 @@ this->trim();
 return *this;
 }
 
+uintxx_t shift_r_round(size_t n)			{
+bool round{at(n-1)};	//add 1 if most significant bit cut of is 1 (the cutoff value is 0.5 or greater)
+this->_d.erase(this->_d.begin(),this->_d.begin()+n);
+if (round)	{(*this)++;}
+this->trim();
+return *this;
+}
+
 uintxx_t operator>>=(size_t n)			{
 this->_d.erase(this->_d.begin(),this->_d.begin()+n);
 this->trim();
@@ -407,6 +414,12 @@ throw std::runtime_error("intxx_t operator< failed");
 intxx_t operator<<(size_t n) const 		{return intxx_t{value<<n}*intxx_t{sign};}
 intxx_t operator>>(size_t n) const 		{return intxx_t{value>>n}*intxx_t{sign};}
 intxx_t operator<<=(size_t n)			{return (*this)=(*this)<<n;}
+
+intxx_t shift_r_round(size_t n)			{
+value.shift_r_round(n);
+return (*this);
+}
+
 intxx_t operator>>=(size_t n)			{return (*this)=(*this)>>n;}
 uintxx_t abs(void) const  			{return value;}	//and ignore sign}
 operator std::string() const			{return ((sign == (-1))?"-":"+")+std::string(value);}
