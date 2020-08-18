@@ -195,7 +195,7 @@ return ret;
 uintxx_t operator/(const uintxx_t& r) const {	//recursive division algorithm
 if (this->effective_size()< r.effective_size())	{return 0;}	//if divisor is larger integer division will return zero
 if (this->effective_size()==r.effective_size())	{return (*this>=r)?1:0;}
-if (r == 2) 			{return (*this)>>1;}	//aditional speedup
+if (r == 2) 					{return (*this)>>1;}	//aditional speedup
 uintxx_t rupscale_result{((*this>>1)/r)<<1};		//we will end up here if this->effective_size() > r.effective_size()
 if (bool(rupscale_result)) {
 	auto leftover = *this - (r * rupscale_result);
@@ -246,17 +246,16 @@ this->trim();
 return *this;
 }
 
-uintxx_t shift_r_round(size_t n)			{
-bool round{at(n-1)};	//add 1 if most significant bit cut of is 1 (the cutoff value is 0.5 or greater)
+uintxx_t operator>>=(size_t n)			{
 this->_d.erase(this->_d.begin(),this->_d.begin()+n);
-if (round)	{(*this)++;}
 this->trim();
 return *this;
 }
 
-uintxx_t operator>>=(size_t n)			{
-this->_d.erase(this->_d.begin(),this->_d.begin()+n);
-this->trim();
+uintxx_t shift_right_and_round(size_t n)			{
+bool round{at(n-1)};	//add 1 if most significant bit cut of is 1 (the cutoff value is 0.5 or greater)
+(*this) >>= n;
+if (round)	{(*this)++;}
 return *this;
 }
 
@@ -414,13 +413,13 @@ throw std::runtime_error("intxx_t operator< failed");
 intxx_t operator<<(size_t n) const 		{return intxx_t{value<<n}*intxx_t{sign};}
 intxx_t operator>>(size_t n) const 		{return intxx_t{value>>n}*intxx_t{sign};}
 intxx_t operator<<=(size_t n)			{return (*this)=(*this)<<n;}
+intxx_t operator>>=(size_t n)			{return (*this)=(*this)>>n;}
 
-intxx_t shift_r_round(size_t n)			{
-value.shift_r_round(n);
+intxx_t shift_right_and_round(size_t n)			{
+value.shift_right_and_round(n);
 return (*this);
 }
 
-intxx_t operator>>=(size_t n)			{return (*this)=(*this)>>n;}
 uintxx_t abs(void) const  			{return value;}	//and ignore sign}
 operator std::string() const			{return ((sign == (-1))?"-":"+")+std::string(value);}
 intxx_t operator% (const intxx_t& r) const 	{return (*this - (*this/r)*r);}

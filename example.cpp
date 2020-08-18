@@ -42,14 +42,21 @@ cout << "e^(1000000) is:\t" << tm << endl;
 //tm = {floatxx_t<64>::exp(floatxx_t<64>{10000000})};
 //cout << "e^(10000000) is:\t" << tm << endl;
 
-auto number = rom::lns<>{};
-cout <<"The lns<> number that is nearest to zero is: \t"<< number.value() <<  endl;
+auto number = rom::lns<>{5};
+cout <<"The lns<> number that is nearest to 5 is: \t"<< number.value() <<  endl;
+number = rom::lns<>{-5};
+cout <<"The lns<> number that is nearest to -5 is: \t"<< number.value() <<  endl;
+cout <<"The smallest lns<> number is: \t"<< number._min() <<  endl;
+cout <<"The largest  lns<> number is: \t"<< number._max() <<  endl;
+
 
 cout << "(2^3217- 1) is a mersenne prime number" << endl;
 //auto  f{(intxx_t{2}^2281) - 1};
 //auto  f{(intxx_t{2}^9941) - 1};
 auto  f{(intxx_t{2}^3217) - 1};
+//rom::lns<> l{f};
 cout << "it is: "<< endl << f << endl;
+//cout << "it is: "<< endl << l << endl;
 
 cout << "e    is:\t" << e<floatxx_t<128>>() << endl;
 cout << "pi   is:\t" << pi<floatxx_t<128>>() << endl;

@@ -24,7 +24,7 @@ intxx_t _mant;   //mantissa;
 
 void shift_mantissa_right(int64_t digits) {     //if digits is negative shift left
 //if      (digits>0)      {_mant >>= digits;}		//left shift with negative input will always preserve value and precision
-if      (digits>0)      {_mant.shift_r_round(digits);}	//left shift with negative input will always preserve value and precision
+if      (digits>0)      {_mant.shift_right_and_round(digits);}	//left shift with negative input will always preserve value and precision
 else if (digits<0)      {_mant <<= std::abs(digits);}	//right shift with positive input should preserve value but precision might be lost
 _exp += digits;
 }
@@ -66,36 +66,12 @@ return intxx_t(int64_t(in));
 }
 
 intxx_t dezimal_exponent(void) const {//107.56 > 2, 12.0 > 1, 7098678,3 > 6, 0.7 > -1
-/*
-if ((*this)==0) {return 1;}
-auto th{abs(*this)};
-static const floatxx_t one{1};
-static const floatxx_t ten{10};
-uint64_t ndig{};
-floatxx_t muli{},divi{};
-intxx_t ret{1};
-const int8_t expected_digits{3};
-for (int8_t i{expected_digits};i>=0;--i) {		//2,1,0
-	ndig 	= uint64_t(uintxx_t::ten_pow(i));	//100,10,1
-	muli 	= floatxx_t(uintxx_t::ten_pow(ndig));	//10^100,10^10,10^1
-	divi 	= one/muli;
-	while (th > ten) {
-		th *= divi;
-        	ret+=ndig;
-       		}
-	while (th < one) {
-        	th *= muli;
-        	ret-=ndig;
-        	}
-	}
-return --ret;
-*/
 intxx_t intpart;
 temp_type th{abs(*this)};
 return intxx_t( (modf(temp_type::log(th,10),&intpart)<0.0)?(intpart-1):(intpart));
 }
 
-size_t dezimal_precision(void)  const {return precision/4;}     //intended numer of digits of
+constexpr size_t dezimal_precision(void)  const {return precision/4;}     //intended numer of digits of
 
 static floatxx_t log_core(floatxx_t x) {	//Returns the natural log of x; abs(xin) should be smaller than 2.0
 x -= 1;                  			//this value has to be smaller than 1.0 otherwise our
@@ -162,15 +138,15 @@ floatxx_t(double in):_exp{0},_mant{0} {(*this) = convert_from_double(in);}
 template <size_t dig>     //intended numer of bits representing the mantissa
 friend class floatxx_t;
 template <size_t dig>     //intended numer of bits representing the mantissa
-floatxx_t(const floatxx_t<dig>& in):_exp{in._exp},_mant{in._mant} {renormalize();}
+floatxx_t(const floatxx_t<dig>& in):_exp{in._exp},_mant{in._mant} {renormalize();}//conversion from this type with different template parameters
 
-static floatxx_t exp(const temp_type& xin) {	//Returns e^x
-static auto ln2{log_core_2(temp_type{2})};
+static floatxx_t exp(const floatxx_t& xin) {	//Returns e^x
+static auto ln2{log_core_2(2)};
 auto ret {_2pow(xin/ln2)};
 return ret;
 }
 
-static floatxx_t log(const temp_type& xin) {	//Returns the natural logarithm of x
+static floatxx_t log(const floatxx_t& xin) {	//Returns the natural logarithm of x
 floatxx_t m{xin._mant};			//split in mantissa and exponent
 floatxx_t e{xin._exp};
 static auto log_2{log_core_2(2)}; //ln(2.0)
@@ -296,13 +272,14 @@ return tmp;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //////OUTPUT OPERATORS /////////////////////////////////////////////////////////////////////////////
+
 template <size_t p>
 std::ostream& operator << (std::ostream& os, const rom::floatxx_t<p>& v) {
 os << std::string(v);
 return os;
 }
 
-#endif
+#endif	//ROM_FLOAT
 
 
 
