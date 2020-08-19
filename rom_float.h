@@ -250,7 +250,7 @@ static floatxx_t one {intxx_t(int(1))};
 if (r     == 0) 	{return one;}
 if (*this == zero) 	{return zero;}
 if (r == 1)		{return (*this);}
-if (rom::abs(r) > 32) {//if exponent is larger than 32 we will break it down to two operation
+if (rom::abs(r) > 8) {//if exponent is larger than 8 we will break it down to two operation
 	if (r%2) {//odd
 		if (r>0) {return (((*this)^(r/2))^2) * (*this); }
 		if (r<0) {return (((*this)^(r/2))^2) / (*this); }

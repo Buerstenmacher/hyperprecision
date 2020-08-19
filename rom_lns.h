@@ -54,8 +54,29 @@ static floatt ret{floatt::log(_abs_base())};
 return ret;
 }
 
+static floatt _inv_ln_abs_base(void) { //return (1.0/ln(abs(_base())))
+static floatt ret{(floatt{1}/_ln_abs_base())};
+return ret;
+}
+
+int8_t sign(void) {return (_exp%2)?int8_t(-1):int8_t(1);}
 
 public:
+~lns()                              = default;      //default destructor
+lns(const lns& in)                  = default;      //default copy should be fast
+lns& operator=(const lns& in)       = default;      //default copy assignment
+
+lns(const floatt& in):lns() {	//construct from floatt
+if (in==0.0) {return;}
+int8_t sign__{(in<0)?int8_t{-1}:int8_t{1}};
+auto value{abs(in)};
+auto close_to_zero{intt(intxx_t( floatt::log(value)*_inv_ln_abs_base() ))};	//candidate rounded toward zero
+auto farther_from_zero{close_to_zero+sign__};				//candidate rounded away from zero
+if (sign__ ==  1) {_exp = (close_to_zero%2)?farther_from_zero:close_to_zero;}
+if (sign__ == -1){_exp = (close_to_zero%2)?close_to_zero:farther_from_zero;}
+}
+
+lns(void):_exp{std::numeric_limits<intt>::min()} {}	//default construct close to zero
 
 static lns _min(void) {
 static lns ret{};
@@ -69,19 +90,27 @@ ret._exp = std::numeric_limits<intt>::max() - 1;
 return ret;
 }
 
-lns(const floatt& in):lns() {
-if (in==0.0) {return;}
-int sign{(in<0)?-1:1};
-auto value{abs(in)};
-auto close_to_zero{intt(intxx_t( floatt::log(value)/_ln_abs_base() ))};	//candidate rounded toward zero
-auto farther_from_zero{close_to_zero+sign};				//candidate rounded away from zero
-if (sign == 1) {_exp = (close_to_zero%2)?farther_from_zero:close_to_zero;}
-if (sign == -1){_exp = (close_to_zero%2)?close_to_zero:farther_from_zero;}
+lns operator*=(const lns& r) {		//simple fast multiplication
+_exp += r._exp;
+return *this;
 }
 
-lns(void):_exp{std::numeric_limits<intt>::min()} {}	//default construct close to zero
+lns operator/=(const lns& r) {		//simple fast division
+_exp -= r._exp;
+return *this;
+}
 
-floatt value(void) const {return  _base()^_exp;}	//get value of number
+lns operator*(const lns& right) const {
+auto th{*this};
+return th*=right;
+}
+
+lns operator/(const lns& right) const {
+auto th{*this};
+return th/=right;
+}
+
+floatt value(void) const 	 {return  _base()^_exp;}	//get value of number
 explicit operator floatt() const {return value();}
 operator std::string() const 	 {return std::string(floatt(*this));}
 

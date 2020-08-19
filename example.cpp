@@ -6,8 +6,14 @@ using namespace std;
 using namespace rom;
 
 int main(void)  {
-
 //auto start{rom::mashinetime()};
+std::cout << "double \t (5 / 50)-0.1 = " ;
+std::cout << (double (5) / double(50))-double(0.1) << std::endl;
+
+std::cout << "rom::lns<> \t " ;
+std::cout << lns<>(5) <<" / " << std::endl;
+std::cout <<  lns<>(50) <<" = " << std::endl;
+std::cout <<  lns<>(5)/lns<>(50) <<" " << std::endl;
 
 auto tm{floatxx_t<64>::exp(floatxx_t<64>{0.001})};
 cout << "e^(0.001) is:\t" << tm << endl;
