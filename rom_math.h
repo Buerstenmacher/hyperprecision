@@ -7,6 +7,79 @@
 #define ROM_MATH
 
 namespace rom {
+template <class ui>             	//any literal type
+const ui& factorial_inv(size_t inp);   //calculate (1.0/inp!) //recursive cached algorithm
+}
+
+namespace {//anonymous
+
+template <class flt>    	//any floating point type
+flt log_core(flt x) {        	//Returns the natural log of x; abs(xin) should be smaller than 2.0
+x -= 1;                         //this value has to be smaller than 1.0 otherwise our
+flt val{0.0};                   //taylor series will never converge --> infinite loop
+flt last_val{0.0};
+size_t i{1};
+do      {
+        last_val = val;
+        val += (x^i)/flt(i);
+        ++i;
+        if (val == last_val) {break;}
+        last_val = val;
+        val -= (x^i)/flt(i);
+        ++i;
+        } while (last_val != val);
+return val;
+}
+
+template <class flt>    	//any floating point type
+flt log_core_2(const flt& xin) {     	//Returns the natural logarithm of x
+static const auto flt1_9{flt{1.9}};   //should work for all values that are larger than 0.0
+if (xin<=0)     {throw std::runtime_error("cannot calculate ln of negative number");}
+if (xin > flt1_9) {     //shotcut for large numbers
+        static auto log_1_9{log_core(flt1_9)};
+        return  log_1_9 + log_core_2(xin/flt1_9);
+        }
+return log_core(xin);
+}
+
+template <class flt>    	//any floating point type
+flt exp_core(const flt& inp) {	//only for use with exp() function!!!!!!!
+flt val{0};				//we are using taylor series to calculate this value
+flt last_val{0};
+size_t i{0};
+do      {
+        last_val = val;
+        val += (inp^i)*::rom::factorial_inv<flt>(i);
+        ++i;
+        } while (last_val != val);
+return val;
+}
+
+}// namespace anonymous
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace rom {
+
+template <size_t precision = 64>     //intended numer of bits representing the mantissa
+class floatxx_t;
+
+template <size_t p>
+auto log(const floatxx_t<p>& xin) -> floatxx_t<p> {
+floatxx_t<p> m{xin._mant};				//split in mantissa and exponent
+floatxx_t<p> e{xin._exp};
+static auto log_2{log_core_2(floatxx_t<p>{2})}; //  this is bad recursion!!!!!  ; //ln(2.0)
+return{e*log_2 + log_core_2(m)};
+}
+
+template <size_t p>
+floatxx_t<p> log(const floatxx_t<p>& x,const floatxx_t<p>& bas) {return log(x)/log(bas);}//overload for arbitrary base
+
+template <size_t p>
+floatxx_t<p> exp(const floatxx_t<p>& xin) {	//Returns e^x
+static auto ln2{log(floatxx_t<p>{2})};
+return {floatxx_t<p>::_2pow(xin/ln2)};
+}
 
 template <class inti> //any integer
 inti sqrt(const inti& in) {
@@ -60,7 +133,7 @@ return (x - *intpart);
 
 template <class flt>	//any floating point type
 flt e(void) {		//calculate eulers number
-static auto ret{flt::exp(flt{1.0})};
+static auto ret{exp(flt{1.0})};
 return ret;
 }
 
@@ -73,8 +146,7 @@ if (base<0)	{//negative base will only be accepted if exponent is integer
 	if (rom::modf(exponent,&in) == flt{0}) {return bool(in%2)?(neg1*pow(abs(base),flt(in))):pow(abs(base),flt(in));}
 	throw std::runtime_error("cannot calculate exp of negative base, result would be a complex number");
 	}
-auto ret {flt::exp(exponent*flt::log(base))};
-return ret;
+return {exp(exponent*log(base))};
 }
 
 template <class flt>
@@ -187,45 +259,4 @@ return ret;
 
 /////////////////////////////////////////////////////////////////////////////////////////$
 #endif
-
-
-/*template <class flt>		//any floating point type
-flt exp_core(const flt& inp) {	//only for use with exp() function!!!!!!!
-flt val{0};			//we are usion taylor series to calculate this value
-flt last_val{0};
-size_t i{0};
-do 	{
-	last_val = val;
-	val += (inp^i)*factorial_inv<flt>(i);
-	++i;
-	} while (last_val != val);
-return val;
-}
-
-template <class flt>	//any floating point type
-flt exp(flt inp) {//Returns the base-e exponential function of inp, which is e raised to the power inp
-static const flt flt0{0};
-static const flt flt1{1};
-if (inp==flt0) {return flt1;}			//x^0.0 is always 1.0
-if (inp<flt0)  {return flt1/exp(abs(inp));}	//if we get a negative number we will calculate the
-static const flt flt11{11};			//inverse of its positive representation
-if (inp<flt11) {return exp_core(inp);}		//if we get a small number we will calculate it directly
-static constexpr uint8_t expected_digits{12};	//do not calculate e^(10^(more than 12)) !!!
-static std::array<flt,expected_digits> mem{};	//e^10^0,e^10^1,e^10^2......
-uint8_t digit{expected_digits};
-while (--digit >= 1) {
-	auto num{flt{uintxx_t::ten_pow(digit)}};
-	if (inp > num) {	//shortcut for large numbers
-		if (mem.at(digit)==flt0) {mem.at(digit) = exp(num);}
-		flt muli{1};
-		while (inp >= num) {
-			inp -= num;
-			muli*=mem.at(digit);
-			}
-		return muli*exp(inp);
-		}
-	}
-throw std::runtime_error("function rom::exp() failed");
-}
-*/
 

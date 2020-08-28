@@ -15,12 +15,21 @@
 namespace rom {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-template <size_t precision = 64>     //intended numer of bits representing the mantissa
+template <size_t precision>     //intended numer of bits representing the mantissa
 class floatxx_t {
 private:        //value == _mant * 2.0^_exp
 using temp_type = floatxx_t<precision + 16>;	//some temporary values will be stored with extra precision
 intxx_t _exp;    //exponent to the base 2.0
 intxx_t _mant;   //mantissa;
+
+template <size_t p>
+friend auto log(const floatxx_t<p>& xin) -> floatxx_t<p>;
+
+template <size_t p>
+friend auto exp(const floatxx_t<p>& xin) -> floatxx_t<p>;
+
+template <size_t p>
+friend floatxx_t<p> log(const floatxx_t<p>& x,const floatxx_t<p>& bas);//overload for arbitrary base
 
 void shift_mantissa_right(int64_t digits) {     //if digits is negative shift left
 //if      (digits>0)      {_mant >>= digits;}		//left shift with negative input will always preserve value and precision
@@ -67,51 +76,11 @@ return intxx_t(int64_t(in));
 
 intxx_t dezimal_exponent(void) const {//107.56 > 2, 12.0 > 1, 7098678,3 > 6, 0.7 > -1
 intxx_t intpart;
-temp_type th{abs(*this)};
-return intxx_t( (modf(temp_type::log(th,10),&intpart)<0.0)?(intpart-1):(intpart));
+floatxx_t th{abs(*this)};
+return intxx_t( (modf(log(th,floatxx_t{10}),&intpart)<0.0)?(intpart-1):(intpart));
 }
 
 constexpr size_t dezimal_precision(void)  const {return precision/4;}     //intended numer of digits of
-
-static floatxx_t log_core(floatxx_t x) {	//Returns the natural log of x; abs(xin) should be smaller than 2.0
-x -= 1;                  			//this value has to be smaller than 1.0 otherwise our
-floatxx_t val{0.0};				//taylor series will never converge --> infinite loop
-floatxx_t last_val{0.0};
-size_t i{1};
-do      {
-        last_val = val;
-        val += (x^i)/floatxx_t(i);
-        ++i;
-        if (val == last_val) {break;}
-        last_val = val;
-        val -= (x^i)/floatxx_t(i);
-        ++i;
-        } while (last_val != val);
-return val;
-}
-
-static floatxx_t log_core_2(const floatxx_t& xin) {	//Returns the natural logarithm of x
-static const auto flt1_9{floatxx_t{1.9}};		//should work for all values that are larger than 0.0
-if (xin<=0)     {throw std::runtime_error("cannot calculate ln of negative number");}
-if (xin > flt1_9) {     //shotcut for large numbers
-        static auto log_1_9{log_core(flt1_9)};
-        return  log_1_9 + log_core_2(xin/flt1_9);
-        }
-auto ret = floatxx_t::log_core(xin);
-return ret;
-}
-
-static floatxx_t exp_core(const floatxx_t& inp) {	//only for use with exp() function!!!!!!!
-floatxx_t val{0};				//we are using taylor series to calculate this value
-floatxx_t last_val{0};
-size_t i{0};
-do      {
-        last_val = val;
-        val += (inp^i)*factorial_inv<floatxx_t>(i);
-        ++i;
-        } while (last_val != val);
-return val;
-}
 
 static floatxx_t _2pow(const intxx_t& x) {	//this should calculate 2^x
 static floatxx_t ret;
@@ -121,7 +90,7 @@ return ret;
 }
 
 static floatxx_t _2pow(const floatxx_t& x) {	//this should calculate 2^x //overload for floating point exponent
-static floatxx_t ln2{log_core_2(2)};
+static floatxx_t ln2{log(floatxx_t{2})};
 intxx_t intp;
 floatxx_t fracp{modf(x,&intp)};
 return _2pow(intp)*exp_core(ln2*fracp);
@@ -138,23 +107,7 @@ floatxx_t(double in):_exp{0},_mant{0} {(*this) = convert_from_double(in);}
 template <size_t dig>     //intended numer of bits representing the mantissa
 friend class floatxx_t;
 template <size_t dig>     //intended numer of bits representing the mantissa
-floatxx_t(const floatxx_t<dig>& in):_exp{in._exp},_mant{in._mant} {renormalize();}//conversion from this type with different template parameters
-
-static floatxx_t exp(const floatxx_t& xin) {	//Returns e^x
-static auto ln2{log_core_2(2)};
-auto ret {_2pow(xin/ln2)};
-return ret;
-}
-
-static floatxx_t log(const floatxx_t& xin) {	//Returns the natural logarithm of x
-floatxx_t m{xin._mant};			//split in mantissa and exponent
-floatxx_t e{xin._exp};
-static auto log_2{log_core_2(2)}; //ln(2.0)
-auto ret{e*log_2 + log_core_2(m)};
-return ret;
-}
-
-static floatxx_t log(const floatxx_t& x,const floatxx_t& bas) {return log(x)/log(bas);}//overload for arbitrary base
+explicit floatxx_t(const floatxx_t<dig>& in):_exp{in._exp},_mant{in._mant} {renormalize();}//conversion from this type with different template parameters
 
 explicit operator intxx_t() const {
 auto th{*this};
@@ -250,6 +203,7 @@ static floatxx_t one {intxx_t(int(1))};
 if (r     == 0) 	{return one;}
 if (*this == zero) 	{return zero;}
 if (r == 1)		{return (*this);}
+if (r == 2)		{return ((*this) * (*this));}
 if (rom::abs(r) > 8) {//if exponent is larger than 8 we will break it down to two operation
 	if (r%2) {//odd
 		if (r>0) {return (((*this)^(r/2))^2) * (*this); }
@@ -262,11 +216,12 @@ if (r > 0)      {for (intxx_t n{0};n!=r;++n)    {tmp *= (*this);}}
 if (r < 0)      {for (intxx_t n{0};n!=r;--n)    {tmp *= (*this);}
 		tmp = one/tmp;
 		}
-tmp.renormalize();
+//tmp.renormalize();
 return tmp;
 }
 
 };	//class floatxx_t
+
 
 }	//namespace rom
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -280,15 +235,4 @@ return os;
 }
 
 #endif	//ROM_FLOAT
-
-
-
-
-
-
-
-
-
-
-
 
