@@ -184,11 +184,11 @@ uintxx_t operator*(const uintxx_t& right) const {	//multiplication
 const auto& left{*this};
 uintxx_t ret{};
 ret.reserve(this->effective_size()+right.effective_size());
-size_t i{right.effective_size()};
-do	{
+size_t i{right.effective_size()};	//if i is 0 we get an error 
+while (i)	{
 	ret <<= 1;
 	if (right._d[--i]) {ret += left;}
-	} while (i);
+	} 
 return ret;
 }
 

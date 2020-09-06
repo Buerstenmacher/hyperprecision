@@ -32,17 +32,6 @@ return val;
 }
 
 template <class flt>    	//any floating point type
-flt log_core_2(const flt& xin) {     	//Returns the natural logarithm of x
-static const auto flt1_9{flt{1.9}};   //should work for all values that are larger than 0.0
-if (xin<=0)     {throw std::runtime_error("cannot calculate ln of negative number");}
-if (xin > flt1_9) {     //shotcut for large numbers
-        static auto log_1_9{log_core(flt1_9)};
-        return  log_1_9 + log_core_2(xin/flt1_9);
-        }
-return log_core(xin);
-}
-
-template <class flt>    	//any floating point type
 flt exp_core(const flt& inp) {	//only for use with exp() function!!!!!!!
 flt val{0};				//we are using taylor series to calculate this value
 flt last_val{0};
@@ -61,23 +50,43 @@ return val;
 
 namespace rom {
 
+template <class flt>    	//any floating point type
+flt log_core_2(const flt& xin) {     	//Returns the natural logarithm of x
+static const auto flt1_9{flt{1.9}};   //should work for all values that are larger than 0.0
+static const flt inv_1_9{flt{1}/flt1_9};
+if (xin<=0)     {throw std::runtime_error("cannot calculate ln of negative number");}
+if (xin > flt1_9) {     //shotcut for large numbers
+        static auto log_1_9{log_core(flt1_9)};
+        return  log_1_9 + log_core_2(xin*inv_1_9);
+        }
+return log_core(xin);
+}
+
 template <size_t precision = 64>     //intended numer of bits representing the mantissa
 class floatxx_t;
 
 template <size_t p>
-auto log(const floatxx_t<p>& xin) -> floatxx_t<p> {
-floatxx_t<p> m{xin._mant};				//split in mantissa and exponent
-floatxx_t<p> e{xin._exp};
-static auto log_2{log_core_2(floatxx_t<p>{2})}; //  this is bad recursion!!!!!  ; //ln(2.0)
-return{e*log_2 + log_core_2(m)};
+auto log(const floatxx_t<p>& xin,bool debug=false) -> floatxx_t<p> {
+typename floatxx_t<p>::temp_type m{xin._mant};				//split in mantissa and exponent
+typename floatxx_t<p>::temp_type e{xin._exp};
+static auto log_2{log_core_2(typename floatxx_t<p>::temp_type{2})}; //  this is bad recursion!!!!!  ; //ln(2.0)
+//if (debug) {std::cout << "log[ " << xin.operator std::string() << " ] = ";}
+//if (debug) {std::cout << "[[exp " << e.operator std::string() << "  ";}
+//if (debug) {std::cout << "man " << m.operator std::string() << "]]  ";}
+//if (debug) {std::cout << "( " << e.operator std::string()  <<" * "<<log_2.operator std::string() <<" * "<<log_core_2(m).operator std::string()   <<" ) = ";}
+auto ret{e*log_2 + log_core_2(m)};
+floatxx_t<p> ret2 {ret};
+//if (debug) {std::cout << "[ " << ret.operator std::string() << " ] -> \t";}
+return ret2;
 }
 
 template <size_t p>
-floatxx_t<p> log(const floatxx_t<p>& x,const floatxx_t<p>& bas) {return log(x)/log(bas);}//overload for arbitrary base
+floatxx_t<p> log(const floatxx_t<p>& x,const floatxx_t<p>& bas) {return log(x,false)/log(bas);}//overload for arbitrary base
 
 template <size_t p>
 floatxx_t<p> exp(const floatxx_t<p>& xin) {	//Returns e^x
 static auto ln2{log(floatxx_t<p>{2})};
+
 return {floatxx_t<p>::_2pow(xin/ln2)};
 }
 
@@ -146,7 +155,13 @@ if (base<0)	{//negative base will only be accepted if exponent is integer
 	if (rom::modf(exponent,&in) == flt{0}) {return bool(in%2)?(neg1*pow(abs(base),flt(in))):pow(abs(base),flt(in));}
 	throw std::runtime_error("cannot calculate exp of negative base, result would be a complex number");
 	}
-return {exp(exponent*log(base))};
+std::cout << "pow( " << base.operator std::string()  <<", "<<exponent.operator std::string()<<" ) = \t";
+auto log_base{log(base,true)};
+std::cout << "e^( " << exponent.operator std::string()  <<", "<<log_base.operator std::string()<<" ) = \t";
+
+auto ret {exp(exponent*log_base)};
+std::cout << ret.operator std::string() << std::endl;
+return ret;
 }
 
 template <class flt>

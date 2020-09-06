@@ -50,7 +50,7 @@ return ret;
 }
 
 static floatt _ln_abs_base(void) { //return the ln(abs(_base()))
-static floatt ret{log(_abs_base())};
+static floatt ret{log(_abs_base(),false)};
 return ret;
 }
 
@@ -77,7 +77,7 @@ lns(const floatt& in):lns() {	//construct from floatt
 if (in==0.0) {return;}
 int8_t sign__{(in<0)?int8_t{-1}:int8_t{1}};
 auto value{abs(in)};
-auto close_to_zero{intt(intxx_t(log(value)*_inv_ln_abs_base() ))};	//candidate rounded toward zero
+auto close_to_zero{intt(intxx_t(log(value,false)*_inv_ln_abs_base() ))};	//candidate rounded toward zero
 auto farther_from_zero{close_to_zero + sign__};						//candidate rounded away from zero
 if (sign__ ==  1) {_exp = (close_to_zero%2)?farther_from_zero:close_to_zero;}
 if (sign__ == -1){_exp = (close_to_zero%2)?close_to_zero:farther_from_zero;}
