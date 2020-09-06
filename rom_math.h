@@ -32,6 +32,18 @@ return val;
 }
 
 template <class flt>    	//any floating point type
+flt log_core_2(const flt& xin) {     	//Returns the natural logarithm of x
+static const auto flt1_9{flt{1.9}};   //should work for all values that are larger than 0.0
+static const flt inv_1_9{flt{1}/flt1_9};
+if (xin<=0)     {throw std::runtime_error("cannot calculate ln of negative number");}
+if (xin > flt1_9) {     //shotcut for large numbers
+        static auto log_1_9{log_core(flt1_9)};
+        return  log_1_9 + log_core_2(xin*inv_1_9);
+        }
+return log_core(xin);
+}
+
+template <class flt>    	//any floating point type
 flt exp_core(const flt& inp) {	//only for use with exp() function!!!!!!!
 flt val{0};				//we are using taylor series to calculate this value
 flt last_val{0};
@@ -49,18 +61,6 @@ return val;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace rom {
-
-template <class flt>    	//any floating point type
-flt log_core_2(const flt& xin) {     	//Returns the natural logarithm of x
-static const auto flt1_9{flt{1.9}};   //should work for all values that are larger than 0.0
-static const flt inv_1_9{flt{1}/flt1_9};
-if (xin<=0)     {throw std::runtime_error("cannot calculate ln of negative number");}
-if (xin > flt1_9) {     //shotcut for large numbers
-        static auto log_1_9{log_core(flt1_9)};
-        return  log_1_9 + log_core_2(xin*inv_1_9);
-        }
-return log_core(xin);
-}
 
 template <size_t precision = 64>     //intended numer of bits representing the mantissa
 class floatxx_t;
@@ -155,12 +155,11 @@ if (base<0)	{//negative base will only be accepted if exponent is integer
 	if (rom::modf(exponent,&in) == flt{0}) {return bool(in%2)?(neg1*pow(abs(base),flt(in))):pow(abs(base),flt(in));}
 	throw std::runtime_error("cannot calculate exp of negative base, result would be a complex number");
 	}
-std::cout << "pow( " << base.operator std::string()  <<", "<<exponent.operator std::string()<<" ) = \t";
+//std::cout << "pow( " << base.operator std::string()  <<", "<<exponent.operator std::string()<<" ) = \t";
 auto log_base{log(base,true)};
-std::cout << "e^( " << exponent.operator std::string()  <<", "<<log_base.operator std::string()<<" ) = \t";
-
+//std::cout << "e^( " << exponent.operator std::string()  <<", "<<log_base.operator std::string()<<" ) = \t";
 auto ret {exp(exponent*log_base)};
-std::cout << ret.operator std::string() << std::endl;
+//std::cout << ret.operator std::string() << std::endl;
 return ret;
 }
 

@@ -9,12 +9,6 @@ using namespace rom;
 int main(void)  {
 //auto start{rom::mashinetime()};
 
-auto googol {pow(floatxx_t<512>{10},floatxx_t<512>{100})};
-cout << "Googol is 10^100 = \t" << googol << endl;
-
-auto googolplex {(floatxx_t<512>{10}^intxx_t(googol))};
-cout << "Googolplex is 10^Googol = \t" << googolplex << endl;
-
 std::cout << "lns    \t (5 / 50)+0.9 = " ;
 std::cout <<  lns<>(5)/lns<>(50) +lns<>(0.9) <<" " << std::endl;
 
@@ -110,6 +104,13 @@ pow(sin(floatxx_t<32>{20.0}),floatxx_t<32>(2)) <<"\t 32bit Float "<< std::endl <
 
 pow(cos(floatxx_t<64>{20.0}),floatxx_t<64>(2))+
 pow(sin(floatxx_t<64>{20.0}),floatxx_t<64>(2)) <<"\t 64bit Float "<< std::endl;
+
+auto googol {pow(floatxx_t<512>{10},floatxx_t<512>{100})};
+cout << "Googol is 10^100 = \t" << googol << endl;
+
+auto googolplex {(floatxx_t<512>{10}^intxx_t(googol))};
+cout << "Googolplex is 10^Googol = \t" << googolplex << endl;
+
 
 //auto time{rom::mashinetime()-start};
 //cout <<"This calculation took " << time << " seconds."<< std::endl;
