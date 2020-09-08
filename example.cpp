@@ -45,6 +45,9 @@ cout << "e^(1000000) is: \t" << tm << endl;
 tm = {exp(floatxx_t<64>{10000000})};
 cout << "e^(10000000) is:\t" << tm << endl;
 
+tm = {exp(floatxx_t<64>{100000000})};
+cout << "e^(100000000) is:\t" << tm << endl;
+
 auto number = rom::lns<>{5};
 cout <<"The lns<> number that is nearest to 5 is: \t"<< number.value() <<  endl;
 number = rom::lns<>{-5};
@@ -62,8 +65,8 @@ rom::lns<14> l{f};
 cout << "it is: "<< endl << f << endl;
 cout << "it is: "<< endl << l << endl;
 
-cout << "e    is:\t" << e<floatxx_t<128>>() << endl;
-cout << "pi   is:\t" << pi<floatxx_t<128>>() << endl;
+cout << "e    is:\t" << e<floatxx_t<256>>() << endl;
+cout << "pi   is:\t" << pi<floatxx_t<256>>() << endl;
 
 cout << "ln(e^(1.0)) is:\t" << log(exp(floatxx_t<64>{1.0})) << endl;
 cout << "ln(e^(10.0)) is:\t" << log(exp(floatxx_t<64>{10.0})) << endl;
@@ -89,15 +92,13 @@ pow(cos(floatxx_t<8>{20.0}),floatxx_t<8>(2))+
 pow(sin(floatxx_t<8>{20.0}),floatxx_t<8>(2)) <<"\t  8bit Float "<< std::endl <<
 
 pow(cos(floatxx_t<16>{20.0}),floatxx_t<16>(2))+
-pow(sin(floatxx_t<16>{20.0}),floatxx_t<16>(2)) <<"\t 16bit Float "<< std::endl;
+pow(sin(floatxx_t<16>{20.0}),floatxx_t<16>(2)) <<"\t 16bit Float "<< std::endl <<
 
-cout <<
 (cos(floatxx_t<8>{20.0})^2)+
 (sin(floatxx_t<8>{20.0})^2) <<"\t  8bit Float "<< std::endl <<
 
 (cos(floatxx_t<16>{20.0})^2)+
 (sin(floatxx_t<16>{20.0})^2) <<"\t 16bit Float "<< std::endl<<
-
 
 pow(cos(floatxx_t<32>{20.0}),floatxx_t<32>(2))+
 pow(sin(floatxx_t<32>{20.0}),floatxx_t<32>(2)) <<"\t 32bit Float "<< std::endl <<
@@ -106,9 +107,9 @@ pow(cos(floatxx_t<64>{20.0}),floatxx_t<64>(2))+
 pow(sin(floatxx_t<64>{20.0}),floatxx_t<64>(2)) <<"\t 64bit Float "<< std::endl;
 
 auto googol {pow(floatxx_t<512>{10},floatxx_t<512>{100})};
-cout << "Googol is 10^100 = \t" << googol << endl;
+std::cout << "Googol is 10^100 = \t" << googol << endl;
 
-auto googolplex {(floatxx_t<512>{10}^intxx_t(googol))};
+auto googolplex {pow(floatxx_t<512>{10},googol)};
 cout << "Googolplex is 10^Googol = \t" << googolplex << endl;
 
 

@@ -252,13 +252,6 @@ this->trim();
 return *this;
 }
 
-uintxx_t shift_right_and_round(size_t n)			{
-bool round{at(n-1)};	//add 1 if most significant bit cut of is 1 (the cutoff value is 0.5 or greater)
-(*this) >>= n;
-if (round)	{(*this)++;}
-return *this;
-}
-
 uintxx_t operator<<(size_t r) const {
 auto th{*this};
 return th<<=r;
@@ -414,11 +407,6 @@ intxx_t operator<<(size_t n) const 		{return intxx_t{value<<n}*intxx_t{sign};}
 intxx_t operator>>(size_t n) const 		{return intxx_t{value>>n}*intxx_t{sign};}
 intxx_t operator<<=(size_t n)			{return (*this)=(*this)<<n;}
 intxx_t operator>>=(size_t n)			{return (*this)=(*this)>>n;}
-
-intxx_t shift_right_and_round(size_t n)			{
-value.shift_right_and_round(n);
-return (*this);
-}
 
 uintxx_t abs(void) const  			{return value;}	//and ignore sign}
 operator std::string() const			{return ((sign == (-1))?"-":"+")+std::string(value);}

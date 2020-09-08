@@ -86,7 +86,6 @@ floatxx_t<p> log(const floatxx_t<p>& x,const floatxx_t<p>& bas) {return log(x,fa
 template <size_t p>
 floatxx_t<p> exp(const floatxx_t<p>& xin) {	//Returns e^x
 static auto ln2{log(floatxx_t<p>{2})};
-
 return {floatxx_t<p>::_2pow(xin/ln2)};
 }
 
