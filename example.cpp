@@ -106,11 +106,14 @@ pow(sin(floatxx_t<32>{20.0}),floatxx_t<32>(2)) <<"\t 32bit Float "<< std::endl <
 pow(cos(floatxx_t<64>{20.0}),floatxx_t<64>(2))+
 pow(sin(floatxx_t<64>{20.0}),floatxx_t<64>(2)) <<"\t 64bit Float "<< std::endl;
 
-auto googol {pow(floatxx_t<512>{10},floatxx_t<512>{100})};
-std::cout << "Googol is 10^100 = \t" << googol << endl;
+auto googol {pow(floatxx_t<512>{10},floatxx_t<512>{100})};  //this calculation may take longer than one hour
+cout << "Googol is 10^100 =              \t" << googol << endl;
 
-auto googolplex {pow(floatxx_t<512>{10},googol)};
-cout << "Googolplex is 10^Googol = \t" << googolplex << endl;
+auto googolplex {pow(floatxx_t<512>{10},googol)};           //this calculation may take longer than one hour
+cout << "Googolplex is 10^Googol =       \t" << googolplex << endl;
+
+auto sqrt_googolplex {pow(googolplex,floatxx_t<512>(0.5))};	           //this calculation may take longer than one hour
+cout << "Square root of Googolplex is: = \t" << sqrt_googolplex << endl;
 
 
 //auto time{rom::mashinetime()-start};

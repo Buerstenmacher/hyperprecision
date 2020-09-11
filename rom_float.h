@@ -23,7 +23,7 @@ intxx_t _exp;    //exponent to the base 2.0
 intxx_t _mant;   //mantissa;
 
 template <size_t p>
-friend auto log(const floatxx_t<p>& xin,bool) -> floatxx_t<p>;
+friend auto log(const floatxx_t<p>& xin) -> floatxx_t<p>;
 
 template <size_t p>
 friend auto exp(const floatxx_t<p>& xin) -> floatxx_t<p>;

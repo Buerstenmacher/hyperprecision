@@ -66,27 +66,25 @@ template <size_t precision = 64>     //intended numer of bits representing the m
 class floatxx_t;
 
 template <size_t p>
-auto log(const floatxx_t<p>& xin,bool debug=false) -> floatxx_t<p> {
-typename floatxx_t<p>::temp_type m{xin._mant};				//split in mantissa and exponent
-typename floatxx_t<p>::temp_type e{xin._exp};
+auto log(const floatxx_t<p>& xin) -> floatxx_t<p> {
+typename floatxx_t<p>::temp_type m{xin._mant};		//split in mantissa and exponent
+typename floatxx_t<p>::temp_type e{xin._exp};		//we use ::temp_type for increased precision
 static auto log_2{log_core_2(typename floatxx_t<p>::temp_type{2})}; //  this is bad recursion!!!!!  ; //ln(2.0)
 //if (debug) {std::cout << "log[ " << xin.operator std::string() << " ] = ";}
 //if (debug) {std::cout << "[[exp " << e.operator std::string() << "  ";}
 //if (debug) {std::cout << "man " << m.operator std::string() << "]]  ";}
 //if (debug) {std::cout << "( " << e.operator std::string()  <<" * "<<log_2.operator std::string() <<" * "<<log_core_2(m).operator std::string()   <<" ) = ";}
 auto ret{e*log_2 + log_core_2(m)};
-floatxx_t<p> ret2 {ret};
-//if (debug) {std::cout << "[ " << ret.operator std::string() << " ] -> \t";}
-return ret2;
+return floatxx_t<p>{ret};
 }
 
 template <size_t p>
-floatxx_t<p> log(const floatxx_t<p>& x,const floatxx_t<p>& bas) {return log(x,false)/log(bas);}//overload for arbitrary base
+floatxx_t<p> log(const floatxx_t<p>& x,const floatxx_t<p>& bas) {return log(x)/log(bas);}//overload for arbitrary base
 
 template <size_t p>
 floatxx_t<p> exp(const floatxx_t<p>& xin) {	//Returns e^x
-static auto ln2{log(floatxx_t<p>{2})};
-return {floatxx_t<p>::_2pow(xin/ln2)};
+static auto ln2{log(typename floatxx_t<p>::temp_type{2})};
+return floatxx_t<p>{floatxx_t<p>::temp_type::_2pow(typename floatxx_t<p>::temp_type(xin)/ln2)};
 }
 
 template <class inti> //any integer
@@ -155,7 +153,7 @@ if (base<0)	{//negative base will only be accepted if exponent is integer
 	throw std::runtime_error("cannot calculate exp of negative base, result would be a complex number");
 	}
 //std::cout << "pow( " << base.operator std::string()  <<", "<<exponent.operator std::string()<<" ) = \t";
-auto log_base{log(base,true)};
+auto log_base{log(base)};
 //std::cout << "e^( " << exponent.operator std::string()  <<", "<<log_base.operator std::string()<<" ) = \t";
 auto ret {exp(exponent*log_base)};
 //std::cout << ret.operator std::string() << std::endl;
