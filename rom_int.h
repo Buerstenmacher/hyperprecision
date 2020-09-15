@@ -1,6 +1,6 @@
 /* this file declares and defines two unlimited dynamic integer types
 1.	rom::uintxx_t 	an unsigned integer with dynamic and possibly unlimited size
-2. 	rom::intxx_t	an igned integer with dynamic and possibly unlimited size
+2. 	rom::intxx_t	an signed integer with dynamic and possibly unlimited size
 recomendation:  only use rom::intxx_t type to be safe if negative values come up	*/
 #include <iostream>
 #include <string>
@@ -31,28 +31,28 @@ return ((mask & in) >> nthbit);
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class uintxx_t {        //this class should create an unlimitided unsigned integer type
-private:		//we will only declare one member variable
+private:				//we will only declare one member variable
 mutable std::vector<bool> _d;	//the bit at(n) has a rank of 2^n; there is only this 1 data member
 
-void reserve(size_t n) {_d.reserve(n+32);}	//32 bits are extra cushion
-//access individul bit	//get false==zero if you access bits out of range
-bool at(size_t nr) const{return (nr<_d.size())?_d[nr]:false;}
+//void reserve(size_t n) {_d.reserve(n+32);}	//32 bits are extra cushion
 
-size_t trim(void) const	{//remove all zeroes from _d that are meaningless
-static size_t ef{};	//return size in bits
+bool at(size_t nr) const{return (nr<_d.size())?_d[nr]:false;}//access individul bit	//get false==zero if you access bits out of range
+
+size_t trim(void) const	{	//remove all zeroes from _d that are meaningless
+static size_t ef{};		//return size in bits
 ef = effective_size();
 _d.resize(ef,false);
 return ef;
 }
 
 auto begin(void)	-> decltype(_d.begin()) 	{return _d.begin();}
-auto cbegin(void) const -> decltype(_d.cbegin())	{return _d.cbegin();}
+auto cbegin(void) const -> decltype(_d.cbegin()){return _d.cbegin();}
 auto end(void) 		-> decltype(_d.end()) 		{return _d.end();}
-auto cend(void)   const -> decltype(_d.cend())		{return _d.cend();}
-size_t size(void) const					{return trim();}
+auto cend(void)   const -> decltype(_d.cend())	{return _d.cend();}
+size_t size(void) const							{return trim();}
 
 size_t decimal_size(void) {	//get the size of the dezimal representation of this number
-if ((*this)==0) {return 1;}	//the value of zero is the only one with a leading zero (false)
+if ((*this)==0) {return 1;}	//the value of zero is the only one we want to write with a leading zero
 size_t digits{0};
 do 	{++digits;} while(ten_pow(digits) <= *this);
 return digits;
@@ -70,16 +70,14 @@ uintxx_t(const uintxx_t& in) = default;	//default copy
 uintxx_t& operator=(const uintxx_t& in) = default;//default copy assignment
 
 static uintxx_t ten_pow(const size_t n) {	//should calculate 10^n as fast as possible
-static std::vector<uintxx_t> mem{1,10,100};	//example: ten_pow(3) will return 1000
-if (n< mem.size()) 	{return mem.at(n);}
+static std::vector<uintxx_t> mem{1,10,100,1000};	//example: ten_pow(3) will return 1000
 while (n>=mem.size())	{mem.push_back(mem.back()*10);}
-return ten_pow(n);
+return mem.at(n);
 }
 
 size_t effective_size(void) const	{	//get the size in bits of this number
-static size_t s{_d.size()};	s = _d.size();
-if (!s) {return 0;}
-do 	{if(this->_d[--s]) {return(s+1);}} while (s);	//ignore leading zeros
+size_t s{_d.size()};
+while(s) {if(this->_d[--s]) {return(s+1);}} //ignore leading zeros
 return (0);
 }
 
@@ -89,9 +87,7 @@ trim();
 }
 
 explicit operator uint64_t() const{	//convert it back to uint64_t
-if ((*this).effective_size()>64)	{
-	throw std::runtime_error ("a number of type uintxx_t is to large to be converted to uint64_t");
-	}
+if (effective_size()>64)	{throw std::runtime_error ("a number of type uintxx_t is to large to be converted to uint64_t");}
 uint64_t res{0};
 size_t i{effective_size()};
 while (i) {
@@ -125,18 +121,18 @@ static auto l_end{this->end()};		l_end = this->end();
 static uint8_t leftover{};
 static uint8_t val{};
 while (r_it!=r_end) {
-	val = *l_it + (*r_it++) + leftover;
-	leftover=val/2;
+	val = (*l_it) + (*r_it++) + leftover;
+	leftover = (val/2);
 	(*l_it++)=(val%2);
 	}
 while (l_it!=l_end) {
-	val = *l_it + leftover;
-	leftover=val/2;
+	val = (*l_it) + leftover;
+	leftover = (val/2);
 	(*l_it++)=(val%2);
 	}
 while (leftover) {
 	val = leftover;
-	leftover = val/2;
+	leftover = (val/2);
 	this->_d.push_back(val%2);
 	}
 return *this;
@@ -151,18 +147,18 @@ auto r_end{r.cend()};
 auto l_end{th.end()};
 uint8_t leftover{0};
 while (r_it!=r_end) {
-	int8_t val = *l_it - (*r_it++) -leftover;
+	int8_t val = (*l_it) - (*r_it++) -leftover;
 	leftover = (val<0);
 	(*l_it++)=(val%2);
 	}
 while (l_it!=l_end) {
-	int8_t val = *l_it - leftover;
+	int8_t val = (*l_it) - leftover;
 	leftover = (val<0);
 	(*l_it++)=(val%2);
 	}
 while (leftover) {
 	uint8_t val = leftover;
-	leftover = val/2;
+	leftover = (val/2);
 	th._d.push_back((val%2)?1:0);//at this point we would have the two's complement value in ret
 	throw std::runtime_error ("uintxx_t operator - calculated a negative number (bottom)");
 	}			//but we will not deal with negitive numbers inside type uintxx_t
@@ -181,14 +177,12 @@ return th-=right;
 }
 
 uintxx_t operator*(const uintxx_t& right) const {	//multiplication
-const auto& left{*this};
 uintxx_t ret{};
-ret.reserve(this->effective_size()+right.effective_size());
-size_t i{right.effective_size()};	//if i is 0 we get an error 
+size_t i{right.effective_size()};
 while (i)	{
 	ret <<= 1;
-	if (right._d[--i]) {ret += left;}
-	} 
+	if (right._d[--i]) {ret += (*this);}
+	}
 return ret;
 }
 
@@ -222,21 +216,21 @@ ISO/IEC 1539:1991, in which the quotient is always rounded toward zero.
 -->	(a/b)*b + a%b == a
 -->	a%b == a - (a/b)*b	*/
 
-bool operator!=(const uintxx_t& r) const {	//operator != might be much faster than operator ==
+/*bool operator!=(const uintxx_t& r) const {	//operator != might be much faster than operator ==
 if (this->effective_size()!=r.effective_size()) {return true;}	//so we define this one first
 for (size_t i{0};i!=r.effective_size();++i) 	{if (this->at(i) != r.at(i))	{return true;}}
 return false;
-}
+}*/
 
 bool operator<(const uintxx_t& r) const {
-if (this->effective_size()<r.effective_size()) 	{return true;}
-if (this->effective_size()>r.effective_size()) 	{return false;}
-if (r.effective_size()==0)		{return false;}
-size_t i{r.effective_size()};
-do {	--i;
+auto i(r.effective_size());
+const auto h(effective_size());
+if (h < i) 	{return true;}
+if (h > i) 	{return false;}
+while (i--) {
 	if (this->at(i) < r.at(i))	{return true;}
 	if (this->at(i) > r.at(i))	{return false;}
-	} while (i);
+	}
 return false;	//if we end up here, *this and r are equal, that implies that *this is not smaller than r
 }
 
@@ -286,10 +280,11 @@ auto temp{*this};
 return temp;
 }
 
+bool 	 operator!=(const uintxx_t& r) const 	{return ((*this<r) or (*this>r));}
 bool	 operator==(const uintxx_t& r) const 	{return !(*this!=r);}
 bool	 operator> (const uintxx_t& r) const 	{return (r<*this);}
-bool 	 operator>=(const uintxx_t& r) const	{return ((*this>r) or (*this==r));}
-bool 	 operator<=(const uintxx_t& r) const	{return ((*this<r) or (*this==r));}
+bool 	 operator>=(const uintxx_t& r) const	{return (!(*this<r));}//todo: this could be faster
+bool 	 operator<=(const uintxx_t& r) const	{return (!(*this>r));}//todo: this could be faster
 uintxx_t operator*=(const uintxx_t& r) 		{return (*this)=(*this)*r;}
 uintxx_t operator^=(uint64_t r)			{return (*this)=(*this)^r;}
 uintxx_t operator/=(const uintxx_t& r) 		{return (*this)=(*this)/r;}
@@ -306,7 +301,6 @@ class intxx_t {	//the one int to catch them all
 private:	//it can possibly hold any integer value (if your system is fast enough)
 uintxx_t value;	//should hold its absolute value
 int8_t sign;	//should be +1 or -1 for the sign of number
-
 
 public:
 intxx_t(void):value{},sign{1} {};			//default constructor will give us a value of +0

@@ -70,7 +70,7 @@ explicit operator floatt() const 	{return value();}
 operator std::string() const 	 	{return std::string(floatt(*this));}			//slow!
 lns operator+(const lns& right) const 	{return lns(right.value()+this->value());}	//slow!
 lns operator-(const lns& right) const 	{return lns(this->value()-right.value());}	//slow!
-lns operator+=(const lns& r) 			{return (*this)=(*this)+r;}				
+lns operator+=(const lns& r) 			{return (*this)=(*this)+r;}
 lns operator-=(const lns& r) 			{return (*this)=(*this)-r;}
 
 lns(const floatt& in):lns() {	//construct from floatt
@@ -80,7 +80,7 @@ auto value{abs(in)};
 auto close_to_zero{intt(intxx_t(log(value)*_inv_ln_abs_base() ))};	//candidate rounded toward zero
 auto farther_from_zero{close_to_zero + sign__};						//candidate rounded away from zero
 if (sign__ ==  1) {_exp = (close_to_zero%2)?farther_from_zero:close_to_zero;}
-if (sign__ == -1){_exp = (close_to_zero%2)?close_to_zero:farther_from_zero;}
+if (sign__ == -1) {_exp = (close_to_zero%2)?close_to_zero:farther_from_zero;}
 }
 
 lns(void):_exp{std::numeric_limits<intt>::min()} {}	//default construct close to zero
