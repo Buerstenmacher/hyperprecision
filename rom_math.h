@@ -70,10 +70,6 @@ auto log(const floatxx_t<p>& xin) -> floatxx_t<p> {
 typename floatxx_t<p>::temp_type m{xin._mant};		//split in mantissa and exponent
 typename floatxx_t<p>::temp_type e{xin._exp};		//we use ::temp_type for increased precision
 static auto log_2{log_core_2(typename floatxx_t<p>::temp_type{2})}; //  this is bad recursion!!!!!  ; //ln(2.0)
-//if (debug) {std::cout << "log[ " << xin.operator std::string() << " ] = ";}
-//if (debug) {std::cout << "[[exp " << e.operator std::string() << "  ";}
-//if (debug) {std::cout << "man " << m.operator std::string() << "]]  ";}
-//if (debug) {std::cout << "( " << e.operator std::string()  <<" * "<<log_2.operator std::string() <<" * "<<log_core_2(m).operator std::string()   <<" ) = ";}
 auto ret{e*log_2 + log_core_2(m)};
 return floatxx_t<p>{ret};
 }
