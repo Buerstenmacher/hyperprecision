@@ -189,14 +189,12 @@ uintxx_t operator/(const uintxx_t& r) const {	//recursive division algorithm
 auto thsz{this->effective_size()};
 auto risz{r.effective_size()};
 if (thsz <  risz)	{return 0;}	//if divisor is larger integer division will return zero
-else if (thsz > risz)	{
-	if (*this >= (r<<1)) {
-		uintxx_t rupscale_result{((*this>>1)/r)<<1};		//we will end up here if this->effective_size() > r.effective_size()
-		auto leftover = *this - (r * rupscale_result);
-		return rupscale_result + (leftover/r);
-		}
+if (*this >= (r<<1)) {
+	auto rupscale_result{((*this>>1)/r)<<1};		//we will end up here if this->effective_size() > r.effective_size()
+	auto leftover = *this - (r * rupscale_result);
+	return rupscale_result + (leftover/r);
 	}
-return (*this>=r)?1:0;	//we will end up here if this->effective_size() >= r.effective_size() and (rupscale_result ==0)
+return (*this>=r)?1:0;	//we will end up here if thsz >= risz and (rupscale_result ==0)
 }
 
 uintxx_t operator^(uint64_t r) const {	//exponentiation
