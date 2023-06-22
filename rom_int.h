@@ -197,6 +197,19 @@ if (*this >= (r<<1)) {
 return (*this>=r)?1:0;	//we will end up here if thsz >= risz and (rupscale_result ==0)
 }
 
+/*
+uintxx_t operator/(const uintxx_t& r) const {	//recursive division algorithm
+if (this->effective_size()< r.effective_size())	{return 0;}	//if divisor is larger integer division will return zero
+if (this->effective_size()==r.effective_size())	{return (*this>=r)?1:0;}
+if (r == 2) 					{return (*this)>>1;}	//aditional speedup
+uintxx_t rupscale_result{((*this>>1)/r)<<1};		//we will end up here if this->effective_size() > r.effective_size()
+if (bool(rupscale_result)) {
+	auto leftover = *this - (r * rupscale_result);
+	return rupscale_result + (leftover/r);
+	}
+return (*this>=r)?1:0;	//we will end up here if this->effective_size() > r.effective_size() and (rupscale_result ==0)
+}
+*/
 uintxx_t operator^(uint64_t r) const {	//exponentiation
 uintxx_t ret{1};
 for (uint64_t n{0};n!=r;++n)	{ret*=(*this);}

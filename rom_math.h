@@ -31,9 +31,9 @@ do      {
 return val;
 }
 
-template <class flt>    	//any floating point type
+template <class flt>    		//any floating point type
 flt log_core_2(const flt& xin) {     	//Returns the natural logarithm of x
-static const auto flt1_9{flt{1.9}};   //should work for all values that are larger than 0.0
+static const auto flt1_9{flt{1.9}};   	//should work for all values that are larger than 0.0
 static const flt inv_1_9{flt{1}/flt1_9};
 if (xin<=0)     {throw std::runtime_error("cannot calculate ln of negative number");}
 if (xin > flt1_9) {     //shotcut for large numbers
@@ -107,21 +107,19 @@ return res;
 template <class ui>             	//any literal type
 const ui& factorial(size_t inp) {      	//calculate inp! //recursive cached algorithm
 static std::vector<ui> mem{1,1,2,6,24}; //we define the first values ourself 0! =1; 1! =1; 2! = 2; 3! = 6 .......
-if (inp < mem.size())	{return mem.at(inp);}
 while (inp>=mem.size())	{mem.push_back(mem.back()*mem.size());}
-return factorial<ui>(inp);
+return mem.at(inp);
 }
 
 //to store the inverses of factorial numbers in an static std::vector may help speed up our taylor series
 template <class ui>             	//any literal type
 const ui& factorial_inv(size_t inp) {   //calculate (1.0/inp!) //recursive cached algorithm
 static std::vector<ui> mem{1,1,0.5}; 	//we define the first values ourself
-if (inp < mem.size())	{return mem.at(inp);}
 while (inp>=mem.size())	{mem.push_back(ui{1}/factorial<ui>(mem.size()));}
-return factorial_inv<ui>(inp);
+return mem.at(inp);
 }
 
-template <class flt>    	//any floating point type
+template <class flt>    		//any floating point type
 flt modf(const flt& x,flt* intpart){	//shoould behave like modf from standard library
 *intpart = flt(intxx_t(x));
 return (x - *intpart);
@@ -130,7 +128,7 @@ return (x - *intpart);
 template <class flt>    		//any floating point type
 flt modf(const flt& x,intxx_t* intpart){	//overload of modf with pointer to universal integer type
 *intpart = intxx_t(x);
-return (x - *intpart);
+return {x - flt{*intpart}};
 }
 
 template <class flt>	//any floating point type

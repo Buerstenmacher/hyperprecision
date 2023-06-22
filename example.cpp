@@ -2,14 +2,13 @@
 
 #include "rom_lns.h"
 #include "rom_math.h"
+
 #include <cmath>
 
 using namespace std;
 using namespace rom;
 
-int main(void)  {
-auto start{rom::mashinetime()};
-
+void demo(void) {
 auto tm{exp(floatxx_t<64>{0.001})};
 cout << "e^(0.001) is:\t" << tm << endl;
 
@@ -102,12 +101,20 @@ cout <<"The largest  lns<> number is: \t"<< number._max() <<  endl;
 std::cout << "lns    \t (5 / 50)+0.9 = " ;
 std::cout <<  lns<>(5)/lns<>(50) +lns<>(0.9) <<" " << std::endl;*/
 
+}
+
+
+int main(void)  {
+auto start{rom::mashinetime()};
+
+demo();
 
 auto googol {pow(floatxx_t<512>{10},floatxx_t<512>{100})};  //this calculation may take longer than one hour
 cout << "Googol is 10^100 =              \t" << googol << endl;
 
 auto googolplex {pow(floatxx_t<512>{10},googol)};           //this calculation may take longer than one hour
-cout << "Googolplex is 10^Googol =       \t" << googolplex << endl;
+auto str{std::string(googolplex)};
+cout << "Googolplex is 10^Googol =       \t" << str << endl;
 
 auto sqrt_googolplex {pow(googolplex,floatxx_t<512>(0.5))};	           //this calculation may take longer than one hour
 cout << "Square root of Googolplex is: = \t" << sqrt_googolplex << endl;
@@ -117,3 +124,4 @@ auto time{rom::mashinetime()-start};
 cout <<"This calculation took " << time << " seconds."<< std::endl;
 
 }
+

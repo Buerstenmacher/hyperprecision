@@ -18,7 +18,7 @@ namespace rom {
 template <size_t precision>     //intended numer of bits representing the mantissa
 class floatxx_t {
 private:        //value == _mant * 2.0^_exp
-using temp_type = floatxx_t<precision + 32>;	//some temporary values will be stored with extra precision
+using temp_type = floatxx_t<(precision + 32)>;	//some temporary values will be stored with extra precision
 intxx_t _exp;    //exponent to the base 2.0
 intxx_t _mant;   //mantissa;
 
@@ -31,7 +31,7 @@ friend auto exp(const floatxx_t<p>& xin) -> floatxx_t<p>;
 template <size_t p>
 friend floatxx_t<p> log(const floatxx_t<p>& x,const floatxx_t<p>& bas);//overload for arbitrary base
 
-void shift_mantissa_right(int64_t digits) {     //if digits is negative shift left //round or cut of if right shift
+void shift_mantissa_right(int64_t digits) {     //if digits is negative shift left //cut of if right shift
 if      (digits>0) 	{_mant >>= digits;}
 else if (digits<0)      {_mant <<= std::abs(digits);}		//left shift with negative input will always preserve value and precision	
 _exp += digits;
@@ -59,7 +59,7 @@ if      (l._exp > r._exp) {r.shift_mantissa_right(int64_t(l._exp-r._exp));}
 else if (l._exp < r._exp) {l.shift_mantissa_right(int64_t(r._exp-l._exp));}
 }
 
-static floatxx_t convert_from_double(double in) {
+static floatxx_t convert_from_double(double in) {// we assume that double does not use more tha 64bit on your system
 static floatxx_t one    {intxx_t(int(1))};
 static floatxx_t two    {intxx_t(int(2))};
 static floatxx_t neg_one{one-two};
@@ -68,7 +68,7 @@ if (in == 0.0) 					{return one-one;}//todo: find out why floatxx_t{} does not b
 if (in<0)                                       {return neg_one * convert_from_double(-1.0* in);}
 if (in>std::numeric_limits<int64_t>::max())     {return two     * convert_from_double(0.5 * in);}
 if (in!=double(int64_t(in)))                    {return half    * convert_from_double(in * 2.0);}
-return intxx_t(int64_t(in));
+return floatxx_t{intxx_t(int64_t(in))};
 }
 
 intxx_t dezimal_exponent(void) const {//107.56 > 2, 12.0 > 1, 7098678,3 > 6, 0.7 > -1
@@ -94,7 +94,7 @@ return _2pow(intp)*exp_core(ln2*fracp);
 }
 
 public:
-floatxx_t(const intxx_t& in):_exp{0},_mant{in} {renormalize();}
+explicit floatxx_t(const intxx_t& in):_exp{0},_mant{in} {renormalize();}
 ~floatxx_t()                                    = default;      //default destructor
 floatxx_t(const floatxx_t& in)                  = default;      //default copy
 floatxx_t& operator=(const floatxx_t& in)       = default;      //default copy assignment
@@ -114,11 +114,18 @@ return th._mant;
 }
 
 operator std::string() const {  //dezimal output in scientific notatation
-intxx_t ep10{dezimal_exponent()};
-auto ten_pow = floatxx_t{10.0} ^ (intxx_t(dezimal_precision())-ep10) ;
-auto tmp{(*this)*ten_pow};
-auto tint = intxx_t(tmp);
-auto d = std::string(tint);
+intxx_t ep10;
+ep10={dezimal_exponent()};	//  <---- some trouble with huge numbers
+
+//(gdb) p ep10.operator std::string()
+//$2 = "+", '9' <repeats 74 times>, "76728177972418388386906112"
+
+floatxx_t ten_pow;
+ten_pow = floatxx_t{10.0} ^ (intxx_t(dezimal_precision())-ep10) ;
+floatxx_t tmp;
+tmp={(*this)*ten_pow};
+intxx_t tint = intxx_t(tmp);
+std::string d = std::string(tint);
 d.insert(d.size()-dezimal_precision(),".");
 return d+ "e" + std::string(ep10);
 }
